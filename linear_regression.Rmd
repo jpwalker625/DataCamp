@@ -1,0 +1,147 @@
+---
+title: "Simple Linear Regression"
+output: 
+  html_notebook: 
+    highlight: tango
+    theme: flatly
+---
+
+**Least Squares Regression**  
+The line that minimizes the sum of the squared differences
+
+`geo_smooth("lm", se = TRUE/FALSE)`
+
+Generic Statistical Model:  response = f(explanatory) + noise
+
+Generic Linear Model: intercept + (slope * explanatory) + noise
+
+$Y =  b_0+ b_1* X$
+
+**Residuals**
+
+Y-hat (Y^) is the expected value given a corresponding x value.  
+In other words, it is the estimated value.
+
+Y = the observed value.
+
+e = Y - Y^
+
+
+**Galton's Regression to the mean**
+
+A very important statistical concept which argues that extreme variables tend to be closer to the mean upon subsequent measurements.
+
+example: height of tall parents' children tend to be taller than average but not as tall as their parents.
+
+*****  
+
+## Linear Modeling
+
+`lm` is an object of class type lm.  
+
+`fitted.values` returns the Y^ corresponding to each observation. NA value are removed from the lm and removed, therefore, in some cases, the fitted values nay not return the same length as the original data frame.
+
+`residuals` can be retrieved using `residuals(lm)`
+
+**The broom package is useful** for various modeling features.
+
+`augment()` will apply the per observation statistics to a model in a tidy fashion.
+
+Here's an example:
+
+```{r BROOM - augment}
+library(broom)
+library(tidyverse)
+        
+mod <- lm(data = diamonds, price ~ carat)
+
+diamonds_tidy <- augment(mod)
+
+glimpse(diamonds_tidy)
+
+predict
+```
+
+Making predictions on data outside of our sample data set is a key concept of machine learning.
+
+We can do this by applying the `predictions` function.  
+It has the arguments, lm (for linear model) and data (for the datset in which you want to make the predictions).
+
+
+
+### Quantification of Model Fit
+
+SSE = sum of squared errors
+
+Residual Standard Error (in R) is the RMSE, or Root Mean Squared Error   
+
+* Standard Deviations of the residuals  
+* In which we divide by the degrees of freedom rather than the number of observations 
+
+In our model above, the residual standard error is 1549.
+
+Let's see if we can replicate that value by computing the RMSE manually.
+
+```{r Compute RMSE}
+summary(mod)
+
+sqrt(sum(residuals(mod)^2) / df.residual(mod))
+
+```
+
+### Comparing Model Fits
+
+**Coefficient of Determiniation**
+also referred to as R squared
+
+$R^2 = 1 - SSE/SST = 1 - Var(e)/Var(y)$
+
+where:  
+
+* SSE = sum of the squared error (the sum of the squared differences of the residuals)  
++ SSE = Variance of the predicted values
+* SST = Total, sum of squared differences of each observation from the overall mean  
++ SST = Variance of the observed values
+
+
+```{r Compute R^2}
+#rsquared of diamonds model = 0.8493
+
+1 - (var(diamonds_tidy$.resid)/var(diamonds_tidy$price))
+```
+
+### Unusual Points
+
+leverage: a function of the distance between the value of the explanatory vriable and the mean of the explaantory variable. 
+
+* Points close to the horizontal center of the scatterplot have low leverage  
+* Points farther from the horizontal center of the plot have higher leverage  
+* Independent of the y values  
+
+**leverage values are computed as _.hat_ in R.**
+
+Values with high leverage may or may not have a considerable affect on the slope coefficient.  
+
+* Values with high leverage but small residuals do not have much **influence**
+* Values with high leverage and a large residual are influential
+
+Influece is a measure of the affect of an explanatory variable on the slope of coefficient of the regression line.
+
+**Cook's Distance** combines leverage and residuals to measure the influence.
+
+```{r leverage & influence}
+slope <- coef(mod)[2]
+
+diamonds_tidy %>%
+  ggplot(aes(x = carat, y = price))+
+  geom_point() +
+  geom_abline(slope = slope, colour = "steelblue", size = 1)
+
+diamonds_tidy %>%
+  arrange(desc(.hat))%>%
+  head()
+
+diamonds_tidy %>%
+  arrange(desc(.cooksd)) %>%
+  head()
+```
