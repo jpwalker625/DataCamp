@@ -6,6 +6,8 @@ output:
     theme: flatly
 ---
 
+
+
 **Least Squares Regression**  
 The line that minimizes the sum of the squared differences
 
@@ -45,7 +47,8 @@ example: height of tall parents' children tend to be taller than average but not
 
 **The broom package is useful** for various modeling features.
 
-`augment()` will apply the per observation statistics to a model in a tidy fashion.
+`augment()` will apply the per observation statistics to a model in a tidy fashion.  
+*useful to know: augment has replaced the outdated* **fortify** *function which you may still see floating around older tutorials and examples on the internet/elsewhere.*
 
 Here's an example:
 
@@ -59,7 +62,6 @@ diamonds_tidy <- augment(mod)
 
 glimpse(diamonds_tidy)
 
-predict
 ```
 
 Making predictions on data outside of our sample data set is a key concept of machine learning.
@@ -67,6 +69,28 @@ Making predictions on data outside of our sample data set is a key concept of ma
 We can do this by applying the `predictions` function.  
 It has the arguments, lm (for linear model) and data (for the datset in which you want to make the predictions).
 
+```{r predictions function}
+mean.price <- mean(diamonds_tidy$price)
+sd.price <- sd(diamonds_tidy$price)
+mean.carat <- mean(diamonds_tidy$carat)
+sd.carat <- sd(diamonds_tidy$carat)
+
+#We have a data set of carat sizes that we want to estimate the prices for.
+sample_data <- data.frame(carat = rnorm( 500, mean = 2.5, sd = 1))
+
+
+sample_data <- sample_data %>%
+  mutate(predictions = predict(mod, newdata = sample_data))
+
+summary(sample_data)
+
+sample_data %>%
+  ggplot(aes(x = carat, y = predictions))+
+  geom_point() +
+  geom_abline(slope = slope)+
+  geom_smooth(method = "lm")
+
+```
 
 
 ### Quantification of Model Fit
@@ -144,4 +168,11 @@ diamonds_tidy %>%
 diamonds_tidy %>%
   arrange(desc(.cooksd)) %>%
   head()
+
+diamonds_tidy %>%
+  ggplot(aes(x = .fitted, y = price)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+
+
 ```
