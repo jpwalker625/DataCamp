@@ -1,0 +1,23 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Functions
+
+Dealing with error
+
+```{r safely}
+library(tidyverse)
+library(purrr)
+
+df <- data.frame(x = c(1:26),
+                 y = letters)
+
+safe_log <- safely(log)
+
+map(df$x, safe_log) %>%
+  head()
+
+map (df, safe_log)
+```
