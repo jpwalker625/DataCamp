@@ -5,7 +5,7 @@ output: html_notebook
 
 # Functions
 
-Dealing with error
+## Dealing with error
 
 ```{r safely}
 library(tidyverse)
@@ -13,11 +13,53 @@ library(purrr)
 
 df <- data.frame(x = c(1:26),
                  y = letters)
-
+#create function (safe_log) which 'safely' takes the log of a value or vector
 safe_log <- safely(log)
 
+safe_log(10)
+safe_log("a")
+
+#variable x is all numbers so we should not see any errors
 map(df$x, safe_log) %>%
   head()
 
-map (df, safe_log)
+# variable y contains all errors and variable z contains some errors
+map (df, safe_log) %>%
+  head()
+```
+
+## Maps over multiple arguments
+
+
+```{r map over multiple arguments}
+rnorm(1)
+rnorm(5)
+rnorm(10)
+
+n <- c(1,5,10)
+
+#map(.x, .f)
+map(n, rnorm)
+
+
+rnorm(1, mean = 1)
+rnorm(5, mean = 5)
+rnorm(10, mean = 10)
+
+#map(.x, .y, .f)
+map2(list(1, 5, 10), list(1, 5, 10), rnorm)
+
+#for multiple arguments use pmap
+rnorm(1, mean = 1, sd = .2)
+rnorm(5, mean = 5, sd = 1)
+rnorm(10, mean = 20, sd = 2.5)
+
+pmap(list(n = list(1, 5, 10),
+          mean = list(1, 5, 20),
+          sd = list(.2, 1, 2.5)), rnorm)
+
+#invoke_map iterates multiple functions over a single value
+#invoke_map(list(.f), .x)
+invoke_map(list(rnorm, runif, rexp), n = 5)
+
 ```

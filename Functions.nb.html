@@ -174,23 +174,57 @@ $(document).ready(function () {
 <!-- rnb-text-begin -->
 <div id="functions" class="section level1">
 <h1>Functions</h1>
-<p>Dealing with error</p>
+<div id="dealing-with-error" class="section level2">
+<h2>Dealing with error</h2>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuZGYgPC0gZGF0YS5mcmFtZSh4ID0gYygxOjI2KSxcbiAgICAgICAgICAgICAgICAgeSA9IGxldHRlcnMsXG4gICAgICAgICAgICAgICAgIHogPSBjKDEsIFwiYVwiLCAyLCBcImJcIiwgMywgXCJjXCIpKVxuXG5gYGAifQ== -->
-<pre class="r"><code>df &lt;- data.frame(x = c(1:26),
-                 y = letters,
-                 z = c(1, &quot;a&quot;, 2, &quot;b&quot;, 3, &quot;c&quot;))
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubGlicmFyeSh0aWR5dmVyc2UpXG5saWJyYXJ5KHB1cnJyKVxuXG5kZiA8LSBkYXRhLmZyYW1lKHggPSBjKDE6MjYpLFxuICAgICAgICAgICAgICAgICB5ID0gbGV0dGVycylcbiNjcmVhdGUgZnVuY3Rpb24gKHNhZmVfbG9nKSB3aGljaCAnc2FmZWx5JyB0YWtlcyB0aGUgbG9nIG9mIGEgdmFsdWUgb3IgdmVjdG9yXG5zYWZlX2xvZyA8LSBzYWZlbHkobG9nKVxuXG5zYWZlX2xvZygxMClcbnNhZmVfbG9nKFwiYVwiKVxuXG4jdmFyaWFibGUgeCBpcyBhbGwgbnVtYmVycyBzbyB3ZSBzaG91bGQgbm90IHNlZSBhbnkgZXJyb3JzXG5tYXAoZGYkeCwgc2FmZV9sb2cpICU+JVxuICBoZWFkKClcblxuIyB2YXJpYWJsZSB5IGNvbnRhaW5zIGFsbCBlcnJvcnMgYW5kIHZhcmlhYmxlIHogY29udGFpbnMgc29tZSBlcnJvcnNcbm1hcCAoZGYsIHNhZmVfbG9nKSAlPiVcbiAgaGVhZCgpXG5gYGAifQ== -->
+<pre class="r"><code>library(tidyverse)
+library(purrr)
+
+df &lt;- data.frame(x = c(1:26),
+                 y = letters)
+#create function (safe_log) which 'safely' takes the log of a value or vector
+safe_log &lt;- safely(log)
+
+safe_log(10)
+safe_log(&quot;a&quot;)
+
+#variable x is all numbers so we should not see any errors
+map(df$x, safe_log) %&gt;%
+  head()
+
+# variable y contains all errors and variable z contains some errors
+map (df, safe_log) %&gt;%
+  head()</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+</div>
+<div id="maps-over-multiple-arguments" class="section level2">
+<h2>Maps over multiple arguments</h2>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubWFwKG4sIHJub3JtKVxuXG5gYGAifQ== -->
+<pre class="r"><code>map(n, rnorm)
 </code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiRXJyb3IgaW4gZGF0YS5mcmFtZSh4ID0gYygxOjI2KSwgeSA9IGxldHRlcnMsIHogPSBjKDEsIFwiYVwiLCAyLCBcImJcIiwgMywgIDogXG4gIGFyZ3VtZW50cyBpbXBseSBkaWZmZXJpbmcgbnVtYmVyIG9mIHJvd3M6IDI2LCA2XG4ifQ== -->
-<pre><code>Error in data.frame(x = c(1:26), y = letters, z = c(1, &quot;a&quot;, 2, &quot;b&quot;, 3,  : 
-  arguments imply differing number of rows: 26, 6</code></pre>
+<!-- rnb-output-begin eyJkYXRhIjoiW1sxXV1cblsxXSAxLjU5ODAzOVxuXG5bWzJdXVxuWzFdICAwLjQ2MDI3NzMgIDIuNTEzNzk0NyAgMC42NTg0Nzk1IC0wLjYxMTQ0OTAgIDAuNjI4MTY1N1xuXG5bWzNdXVxuIFsxXSAgMS4zMDkwNDU0IC0wLjI0NzI5MjEgIDAuNzkzOTE5OCAgMC4yMjc4NTAyICAwLjE4MjM3NDcgIDEuMjE2MTQ2NCAgMi40NDM0NzkxIC0yLjI4OTQ5MjhcbiBbOV0gLTAuNDQxMTQ4OSAgMS4wNTAwODYzXG4ifQ== -->
+<pre><code>[[1]]
+[1] 1.598039
+
+[[2]]
+[1]  0.4602773  2.5137947  0.6584795 -0.6114490  0.6281657
+
+[[3]]
+ [1]  1.3090454 -0.2472921  0.7939198  0.2278502  0.1823747  1.2161464  2.4434791 -2.2894928
+ [9] -0.4411489  1.0500863</code></pre>
 <!-- rnb-output-end -->
 <!-- rnb-chunk-end -->
 </div>
+</div>
 
-<div id="rmd-source-code">LS0tCnRpdGxlOiAiUiBOb3RlYm9vayIKb3V0cHV0OiBodG1sX25vdGVib29rCi0tLQoKIyBGdW5jdGlvbnMKCkRlYWxpbmcgd2l0aCBlcnJvcgoKYGBge3Igc2FmZWx5fQpsaWJyYXJ5KHRpZHl2ZXJzZSkKbGlicmFyeShwdXJycikKCmRmIDwtIGRhdGEuZnJhbWUoeCA9IGMoMToyNiksCiAgICAgICAgICAgICAgICAgeSA9IGxldHRlcnMpCgpzYWZlX2xvZyA8LSBzYWZlbHkobG9nKQoKbWFwKGRmJHgsIHNhZmVfbG9nKSAlPiUKICBoZWFkKCkKCm1hcCAoZGYsIHNhZmVfbG9nKQpgYGAK</div>
+<div id="rmd-source-code">LS0tDQp0aXRsZTogIlIgTm90ZWJvb2siDQpvdXRwdXQ6IGh0bWxfbm90ZWJvb2sNCi0tLQ0KDQojIEZ1bmN0aW9ucw0KDQojIyBEZWFsaW5nIHdpdGggZXJyb3INCg0KYGBge3Igc2FmZWx5fQ0KbGlicmFyeSh0aWR5dmVyc2UpDQpsaWJyYXJ5KHB1cnJyKQ0KDQpkZiA8LSBkYXRhLmZyYW1lKHggPSBjKDE6MjYpLA0KICAgICAgICAgICAgICAgICB5ID0gbGV0dGVycykNCiNjcmVhdGUgZnVuY3Rpb24gKHNhZmVfbG9nKSB3aGljaCAnc2FmZWx5JyB0YWtlcyB0aGUgbG9nIG9mIGEgdmFsdWUgb3IgdmVjdG9yDQpzYWZlX2xvZyA8LSBzYWZlbHkobG9nKQ0KDQpzYWZlX2xvZygxMCkNCnNhZmVfbG9nKCJhIikNCg0KI3ZhcmlhYmxlIHggaXMgYWxsIG51bWJlcnMgc28gd2Ugc2hvdWxkIG5vdCBzZWUgYW55IGVycm9ycw0KbWFwKGRmJHgsIHNhZmVfbG9nKSAlPiUNCiAgaGVhZCgpDQoNCiMgdmFyaWFibGUgeSBjb250YWlucyBhbGwgZXJyb3JzIGFuZCB2YXJpYWJsZSB6IGNvbnRhaW5zIHNvbWUgZXJyb3JzDQptYXAgKGRmLCBzYWZlX2xvZykgJT4lDQogIGhlYWQoKQ0KYGBgDQoNCiMjIE1hcHMgb3ZlciBtdWx0aXBsZSBhcmd1bWVudHMNCg0KDQpgYGB7ciBtYXAgb3ZlciBtdWx0aXBsZSBhcmd1bWVudHN9DQpybm9ybSgxKQ0Kcm5vcm0oNSkNCnJub3JtKDEwKQ0KDQpuIDwtIGMoMSw1LDEwKQ0KDQojbWFwKC54LCAuZikNCm1hcChuLCBybm9ybSkNCg0KDQpybm9ybSgxLCBtZWFuID0gMSkNCnJub3JtKDUsIG1lYW4gPSA1KQ0Kcm5vcm0oMTAsIG1lYW4gPSAxMCkNCg0KI21hcCgueCwgLnksIC5mKQ0KbWFwMihsaXN0KDEsIDUsIDEwKSwgbGlzdCgxLCA1LCAxMCksIHJub3JtKQ0KDQojZm9yIG11bHRpcGxlIGFyZ3VtZW50cyB1c2UgcG1hcA0Kcm5vcm0oMSwgbWVhbiA9IDEsIHNkID0gLjIpDQpybm9ybSg1LCBtZWFuID0gNSwgc2QgPSAxKQ0Kcm5vcm0oMTAsIG1lYW4gPSAyMCwgc2QgPSAyLjUpDQoNCnBtYXAobGlzdChuID0gbGlzdCgxLCA1LCAxMCksDQogICAgICAgICAgbWVhbiA9IGxpc3QoMSwgNSwgMjApLA0KICAgICAgICAgIHNkID0gbGlzdCguMiwgMSwgMi41KSksIHJub3JtKQ0KDQojaW52b2tlX21hcCBpdGVyYXRlcyBtdWx0aXBsZSBmdW5jdGlvbnMgb3ZlciBhIHNpbmdsZSB2YWx1ZQ0KI2ludm9rZV9tYXAobGlzdCguZiksIC54KQ0KaW52b2tlX21hcChsaXN0KHJub3JtLCBydW5pZiwgcmV4cCksIG4gPSA1KQ0KDQpgYGANCg==</div>
 
 
 
