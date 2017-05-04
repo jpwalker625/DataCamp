@@ -5,6 +5,15 @@ output: html_notebook
 
 # Functions
 
+Rules for writing functions:
+
+1) Typically, if you need to copy and paste more than 2 times, it's time to write a function.
+2) Solve a simple problem before writing a function.
+3) A good function is both correct and understandable.
+
+## Functional Programming
+
+
 ## Dealing with error
 
 ```{r safely}
@@ -26,10 +35,11 @@ map(df$x, safe_log) %>%
 # variable y contains all errors and variable z contains some errors
 map (df, safe_log) %>%
   head()
+
+safe_log(df$x)
 ```
 
 ## Maps over multiple arguments
-
 
 ```{r map over multiple arguments}
 rnorm(1)
@@ -63,3 +73,85 @@ pmap(list(n = list(1, 5, 10),
 invoke_map(list(rnorm, runif, rexp), n = 5)
 
 ```
+
+## Maps wth Side Effects
+
+Anything that happens that isn't a return of the function  
+* printing output
+* plotting
+* saving files
+
+For side effects, we can use the walk() function analagous to map()
+```{r}
+
+titles <- colnames(mtcars)
+pwalk(list(x = mtcars, main = titles), hist, xlab = "")
+
+```
+
+
+## Robust Functions
+
+Functions designed for programming should be robust and strict.
+
+3 main problems:  
+* type-unstable functions
+* non-standard evaluation
+* hidden arguments
+
+stopifnot function to signal errors
+
+```{r stopifnot}
+
+x <- 1:10
+
+stopifnot(is.character(x))
+
+if(!is.character(x)){
+  stop(" `x` should be a character vector", call. = FALSE)
+}
+
+```
+
+
+single bracket [, and sapply are examples of type inconsistent functions. In general, write functions to avoid type inconsistency.
+
+```{r type-inconsistent}
+#recall df from earlier
+glimpse(df)
+
+#create a single variable df
+df2 <- data.frame(x = 1:26)
+
+# create a function to pull the last row of a data frame
+last_row <- function(x){
+  x[nrow(x), ]
+}
+
+last_row(df)
+
+str(last_row(df))
+
+str(last_row(df2))
+
+#to get around this type inconsistency, we can use the 'drop = FALSE' argument
+
+last_row <- function(x){
+  x[nrow(x), , drop = FALSE]}
+
+str(last_row(df))
+
+str(last_row(df2))
+
+```
+
+Non-Standard Evaluation
+
+dplyr, ggplot
+
+
+Hidden Arguments
+
+options("digits")
+
+
