@@ -181,6 +181,37 @@ $(document).ready(function () {
 <h1>Randomized Distributions</h1>
 <p>The idea behind this is to explore the variation of distribution under the circumstances in which the null hypothesis is true.</p>
 </div>
+<div id="foundations-of-inference" class="section level1">
+<h1>Foundations of Inference</h1>
+<p>It is possible to use <code>table()</code> to create a contigency table of a dataframe</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubGlicmFyeSh0aWR5dmVyc2UpXG5cbnNleCA8LSByZXAoYyhcIm1hbGVcIiwgXCJmZW1hbGVcIiksIDUwKVxucHJvbW90ZSA8LSByZXAoYyhcInByb21vdGVkXCIsIFwibm90IHByb21vdGVkXCIpLCA1MClcblxucHJvbW90aW9ucyA8LSBkYXRhLmZyYW1lKHNleCA9IHNhbXBsZShzZXgsIDUwLCByZXBsYWNlID0gVFJVRSksXG4gICAgICAgICAgICAgICAgICAgICAgICAgcHJvbW90ZSA9IHNhbXBsZShwcm9tb3RlLCA1MCwgcmVwbGFjZSA9IFRSVUUpKVxuZ2xpbXBzZShwcm9tb3Rpb25zKSBcblxudGFibGUocHJvbW90aW9ucylcblxucHJvbW90aW9ucyAlPiVcbmdyb3VwX2J5KHNleCkgJT4lXG5zdW1tYXJpc2UocHJvbW90ZWRfcHJvcCA9IG1lYW4ocHJvbW90ZSA9PSBcInByb21vdGVkXCIpKVxuXG5gYGAifQ== -->
+<pre class="r"><code>library(tidyverse)
+
+sex &lt;- rep(c(&quot;male&quot;, &quot;female&quot;), 50)
+promote &lt;- rep(c(&quot;promoted&quot;, &quot;not promoted&quot;), 50)
+
+promotions &lt;- data.frame(sex = sample(sex, 50, replace = TRUE),
+                         promote = sample(promote, 50, replace = TRUE))
+glimpse(promotions) 
+
+table(promotions)
+
+promotions %&gt;%
+group_by(sex) %&gt;%
+summarise(promoted_prop = mean(promote == &quot;promoted&quot;))
+</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<div id="p-value" class="section level2">
+<h2>p-value</h2>
+<blockquote>
+<p>probability of observing data as or more extreme than what we actually got given that the null hypothesis is true</p>
+</blockquote>
+</div>
+</div>
 <div id="hypothesis-testing" class="section level1">
 <h1>Hypothesis Testing</h1>
 <p>Error Types</p>
@@ -194,7 +225,7 @@ $(document).ready(function () {
 <!-- rnb-text-end -->
 </div>
 
-<div id="rmd-source-code">LS0tDQp0aXRsZTogIlN0YXRpc3RpY2FsIEluZmVyZW5jZSINCm91dHB1dDogaHRtbF9ub3RlYm9vaw0KLS0tDQojIEludHJvZHVjdGlvbg0KDQpOdWxsIGh5cG90aGVzaXMgKEh+b34pOiBUaGUgY2xhaW0gdGhhdCBpcyBub3QgaW50ZXJlc3RpbmcNCkFsdGVybmF0aXZlIEh5cG90aGVzaXMgKEh+QX4pIDogVGhlIGNsYWltIGNvb3Jlc3BvbmRpbmcgdG8gdGhlIHJlc2VhcmNoIGh5cG90aGVzaXMNCg0KKipUaGUgImdvYWwiIGlzIHRvIGRpc3Byb3ZlIHRoZSBudWxsIGh5cG90aGVzaXMqKg0KDQojIFJhbmRvbWl6ZWQgRGlzdHJpYnV0aW9ucw0KDQpUaGUgaWRlYSBiZWhpbmQgdGhpcyBpcyB0byBleHBsb3JlIHRoZSB2YXJpYXRpb24gb2YgZGlzdHJpYnV0aW9uIHVuZGVyIHRoZSBjaXJjdW1zdGFuY2VzIGluIHdoaWNoIHRoZSBudWxsIGh5cG90aGVzaXMgaXMgdHJ1ZS4NCg0KDQojIEh5cG90aGVzaXMgVGVzdGluZw0KDQpFcnJvciBUeXBlcw0KDQpUeXBlIDEgRXJyb3I6IFJlamVjdGluZyB0aGVIfm9+IGluIGZhdm9yIG9mIEh+QX4gd2hlbiBpbiBmYWN0IHRoZSBIfm9+IGlzICoqVFJVRSoqICANCiogVGhpcyB0eXBlIG9mIGVycm9yIGlzIGFsc28ga25vd24gYXMgYSAqKkZhbHNlIFBvc2l0aXZlKioNCg0KVHlwZSAyIEVycm9yOiBOb3QgcmVqZWN0aW5nIHRoZSBIfm9+IHdoZW4gaW4gZmFjdCB0aGUgSH5BfiBpcyAqKlRSVUUqKiAgDQoqIFRoaXMgaXMgY2FsbGVkICoqRkFMU0UgTmVnYXRpdmUgUmF0ZSoqIGFuZCBpcyB3aGF0IHdlIHR5cGljYWxseSB3YW50IHRvIGF2b2lkIGluIG1vc3QgY2FzZXMuDQoNCiMgSW5mZXJlbnRpYWwgRXN0aW1hdGlvbg==</div>
+<div id="rmd-source-code">LS0tDQp0aXRsZTogIlN0YXRpc3RpY2FsIEluZmVyZW5jZSINCm91dHB1dDogaHRtbF9ub3RlYm9vaw0KLS0tDQojIEludHJvZHVjdGlvbg0KDQpOdWxsIGh5cG90aGVzaXMgKEh+b34pOiBUaGUgY2xhaW0gdGhhdCBpcyBub3QgaW50ZXJlc3RpbmcNCkFsdGVybmF0aXZlIEh5cG90aGVzaXMgKEh+QX4pIDogVGhlIGNsYWltIGNvb3Jlc3BvbmRpbmcgdG8gdGhlIHJlc2VhcmNoIGh5cG90aGVzaXMNCg0KKipUaGUgImdvYWwiIGlzIHRvIGRpc3Byb3ZlIHRoZSBudWxsIGh5cG90aGVzaXMqKg0KDQojIFJhbmRvbWl6ZWQgRGlzdHJpYnV0aW9ucw0KDQpUaGUgaWRlYSBiZWhpbmQgdGhpcyBpcyB0byBleHBsb3JlIHRoZSB2YXJpYXRpb24gb2YgZGlzdHJpYnV0aW9uIHVuZGVyIHRoZSBjaXJjdW1zdGFuY2VzIGluIHdoaWNoIHRoZSBudWxsIGh5cG90aGVzaXMgaXMgdHJ1ZS4NCg0KIyBGb3VuZGF0aW9ucyBvZiBJbmZlcmVuY2UNCg0KSXQgaXMgcG9zc2libGUgdG8gdXNlIGB0YWJsZSgpYCB0byBjcmVhdGUgYSBjb250aWdlbmN5IHRhYmxlIG9mIGEgZGF0YWZyYW1lDQoNCmBgYHtyIHRhYmxlKCkgZXhhbXBsZX0NCmxpYnJhcnkodGlkeXZlcnNlKQ0KDQpzZXggPC0gcmVwKGMoIm1hbGUiLCAiZmVtYWxlIiksIDUwKQ0KcHJvbW90ZSA8LSByZXAoYygicHJvbW90ZWQiLCAibm90IHByb21vdGVkIiksIDUwKQ0KDQpwcm9tb3Rpb25zIDwtIGRhdGEuZnJhbWUoc2V4ID0gc2FtcGxlKHNleCwgNTAsIHJlcGxhY2UgPSBUUlVFKSwNCiAgICAgICAgICAgICAgICAgICAgICAgICBwcm9tb3RlID0gc2FtcGxlKHByb21vdGUsIDUwLCByZXBsYWNlID0gVFJVRSkpDQpnbGltcHNlKHByb21vdGlvbnMpIA0KDQp0YWJsZShwcm9tb3Rpb25zKQ0KDQpwcm9tb3Rpb25zICU+JQ0KZ3JvdXBfYnkoc2V4KSAlPiUNCnN1bW1hcmlzZShwcm9tb3RlZF9wcm9wID0gbWVhbihwcm9tb3RlID09ICJwcm9tb3RlZCIpKQ0KDQpgYGANCg0KDQojIyBwLXZhbHVlDQoNCj4gcHJvYmFiaWxpdHkgb2Ygb2JzZXJ2aW5nIGRhdGEgYXMgb3IgbW9yZSBleHRyZW1lIHRoYW4gd2hhdCB3ZSBhY3R1YWxseSBnb3QgZ2l2ZW4gdGhhdCB0aGUgbnVsbCBoeXBvdGhlc2lzIGlzIHRydWUNCg0KIyBIeXBvdGhlc2lzIFRlc3RpbmcNCg0KRXJyb3IgVHlwZXMNCg0KVHlwZSAxIEVycm9yOiBSZWplY3RpbmcgdGhlSH5vfiBpbiBmYXZvciBvZiBIfkF+IHdoZW4gaW4gZmFjdCB0aGUgSH5vfiBpcyAqKlRSVUUqKiAgDQoqIFRoaXMgdHlwZSBvZiBlcnJvciBpcyBhbHNvIGtub3duIGFzIGEgKipGYWxzZSBQb3NpdGl2ZSoqDQoNClR5cGUgMiBFcnJvcjogTm90IHJlamVjdGluZyB0aGUgSH5vfiB3aGVuIGluIGZhY3QgdGhlIEh+QX4gaXMgKipUUlVFKiogIA0KKiBUaGlzIGlzIGNhbGxlZCAqKkZBTFNFIE5lZ2F0aXZlIFJhdGUqKiBhbmQgaXMgd2hhdCB3ZSB0eXBpY2FsbHkgd2FudCB0byBhdm9pZCBpbiBtb3N0IGNhc2VzLg0KDQojIEluZmVyZW50aWFsIEVzdGltYXRpb24=</div>
 
 
 

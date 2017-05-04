@@ -13,6 +13,32 @@ Alternative Hypothesis (H~A~) : The claim cooresponding to the research hypothes
 
 The idea behind this is to explore the variation of distribution under the circumstances in which the null hypothesis is true.
 
+# Foundations of Inference
+
+It is possible to use `table()` to create a contigency table of a dataframe
+
+```{r table() example}
+library(tidyverse)
+
+sex <- rep(c("male", "female"), 50)
+promote <- rep(c("promoted", "not promoted"), 50)
+
+promotions <- data.frame(sex = sample(sex, 50, replace = TRUE),
+                         promote = sample(promote, 50, replace = TRUE))
+glimpse(promotions) 
+
+table(promotions)
+
+promotions %>%
+group_by(sex) %>%
+summarise(promoted_prop = mean(promote == "promoted"))
+
+```
+
+
+## p-value
+
+> probability of observing data as or more extreme than what we actually got given that the null hypothesis is true
 
 # Hypothesis Testing
 
