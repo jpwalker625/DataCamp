@@ -36,9 +36,11 @@ summarise(promoted_prop = mean(promote == "promoted"))
 ```
 
 
-## p-value
+# p-value
 
 > probability of observing data as or more extreme than what we actually got given that the null hypothesis is true
+
+
 
 # Hypothesis Testing
 
@@ -50,4 +52,33 @@ Type 1 Error: Rejecting theH~o~ in favor of H~A~ when in fact the H~o~ is **TRUE
 Type 2 Error: Not rejecting the H~o~ when in fact the H~A~ is **TRUE**  
 * This is called **FALSE Negative Rate** and is what we typically want to avoid in most cases.
 
-# Inferential Estimation
+# Parameters & Confidence Intervals
+
+Hypothesis Test: Under which diet plan will participants lose more weight on average?  
+
+Confidence Interval: How much should participants expect to lose on average?  
+
+A **parameter** is a numerical value from the population.  
+
+A confidence interval is a range of numbers that (hopefully) captures the true parameter.  
+
+## Bootstrapping
+
+p^ : *statistic*, proprotion of successes in sample
+
+p : parameter*, proportion of successes in population
+
+
+We are 95% confident that the true proportion lies within the range of the confidence interval
+bootstrapping repeatedly samples from the original sample.  
+* sample with replacement
+
+*Standard Error* describes how the statistic varies around parameter.  
+* variability of the sample proportion. 
+
+Approximately 95% of samples will produce p^'s within 2SE of the center.
+
+
+
+
+
