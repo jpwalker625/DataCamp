@@ -1,0 +1,158 @@
+---
+title: "Machine Learning Toolbox"
+output: html_notebook
+---
+
+# Part 1: Regressions Models: Fitting & Evaluating Performance
+
+Supervised Learning  
+* caret R package
+* predictive modeling
+* target variable (the variable you want to predict)
+
+two types of models
+classification - qualitative
+regression - quantitative
+
+Use metrics to evaulate models
+RMSE
+out-of-sample erroris a better approach to prevent being too optimistic about your model due to the fact that we use RMSE to evaluate the model (training data) in the first place
+
+
+```{r Machine Learning}
+library(tidyverse)
+names(diamonds)
+
+#create model of on the diamonds data set predciting price using all other variables as predictors (price ~ .)
+model <- lm(data = diamonds, formula = price ~ .)
+
+#make predictions on original dataset using the model we just built
+p <- predict(object = model, newdata = diamonds)
+
+#compute errors:
+error <- p - diamonds$price
+
+Calculate RMSE:
+sqrt(mean(error^2))
+```
+
+Out-of-sample error  
+* We Want models that don't overfit, and generalize well
+* Do the models perform well on new data
+* Test set
+
+```{r randomize dataset}
+#order the dataset randomly to remove any biases in the ordering of the data
+
+#use set.seed to reproduce the same random split each time you run the script
+set.seed(42)
+
+#use sample to shuffle the data
+rows <- sample(nrow(diamonds))
+
+# Randomly order data
+diamonds <- diamonds[rows, ]
+
+```
+
+Next, let's split the data 80/20, the 80% being the training set and the last 20% being the test set.
+
+```{r split dataset}
+# Determine row to split on: split
+split <- round(nrow(diamonds) * .80)
+
+# Create training dataset
+train <- diamonds[1:split, ]
+
+# Create test dataset
+test <- diamonds[(split + 1): nrow(diamonds), ]
+
+```
+
+Now we can apply the concepts of the linear model to the training and test sets
+
+```{r Predict on Test Set}
+
+# Fit lm model on train: model
+model <- lm(price ~ ., train)
+
+# Predict on test: p
+p <- predict(model, test)
+
+
+# Compute errors: error
+error <- p - test$price
+
+# Calculate RMSE
+sqrt(mean(error^2))
+```
+
+
+Cross-Validation
+* 11x is time expensive as fitting a single model.
+* bootstrap modeling is another approach similar to CV
+
+The benefit of CV is that it gives you multiple out-of-sample error estimates to critique the model.
+If the estimates are similar, you can be more certain of the model's accuracy. ANd vice versa, if the estimates give different outputs, the model does not generalize well and there may be a problem with it.
+
+notes on train function  
+* pass the method for modeling to the main train() function
+* pass the method for cross-validation to the trainControl() function.
+
+```{r cross-validation with Caret}
+library(caret) # for modeling
+library(mlbench) #for machine learning datasets
+
+#cross-validation method of the diamonds dataset using the train() function
+model <- train(
+  price ~ ., diamonds,
+  method = "lm",
+  trControl = trainControl(
+    method = "cv", number = 10,
+    verboseIter = TRUE
+  )
+)
+
+# Print model to console
+print(model)
+
+#another example using the Boston housing dataset
+data("BostonHousing")
+
+Boston.model <- train(
+  medv ~ ., BostonHousing,
+  method = "lm",
+  trControl = trainControl(
+    method = "cv", number = 5,
+    verboseIter = TRUE
+  )
+)
+
+# Print model to console
+print(Boston.model)
+
+
+#repeated cross-fold validation to improve the estimate of the test-set error
+#using argument "repeats ="
+
+Boston.model.repeated <- train(
+  medv ~ ., BostonHousing,
+  method = "lm",
+  trControl = trainControl(
+    method = "cv", number = 5,
+    repeats = 5, verboseIter = TRUE
+  )
+)
+
+# Print model to console
+print(Boston.model.repeated)
+
+
+#you can use the predict function on the model created with the train() function to make predictions about the original dataset
+Boston.model.predictions <- predict(Boston.model, BostonHousing) 
+
+Boston.model.repeated.predictions <- predict(Boston.model.repeated, BostonHousing)
+
+plot(x = Boston.model.predictions, y = Boston.model.repeated.predictions)
+```
+

@@ -44,6 +44,8 @@ summarise(promoted_prop = mean(promote == "promoted"))
 
 # Hypothesis Testing
 
+How do samples from the null population vary?
+
 Error Types
 
 Type 1 Error: Rejecting theH~o~ in favor of H~A~ when in fact the H~o~ is **TRUE**  
@@ -64,17 +66,68 @@ A confidence interval is a range of numbers that (hopefully) captures the true p
 
 ## Bootstrapping
 
+Allows us to estimate the distance of the statistic from the parameter.
+
 p^ : *statistic*, proprotion of successes in sample
 
 p : parameter*, proportion of successes in population
 
+population --> sample --> resample (1,2,3, etc...)
+
+p^* : proportion of successess in the resampled p^ statistic
+
+
+```{r bootstrapping example}
+library(tidyverse)
+
+rep_sample_n <- function(tbl, size, replace = FALSE, reps = 1)
+{
+    n <- nrow(tbl)
+    i <- unlist(replicate(reps, sample.int(n, size, replace = replace), simplify = FALSE))
+
+    rep_tbl <- cbind(replicate = rep(1:reps,rep(size,reps)), tbl[i,])
+
+    dplyr::group_by(rep_tbl, replicate)
+}
+
+df <- read.csv("Y22322-FUVMO_sucrose_dataset.csv", header = TRUE)
+
+Y22322 <- df %>% select(y_number, assay_value, plate_group_id)
+
+Y22322 <- Y22322 %>% group_by(plate_group_id) %>%
+  mutate(replicates = n()) %>%
+  filter(replicates == 30) %>%
+  ungroup()
+
+one_library <- Y22322 %>%
+  filter(plate_group_id == 4518) %>%
+  select(assay_value) %>%
+  as_tibble()
+
+bootstrap_sampling <- rep_sample_n(one_library, size = 30, replace = TRUE, reps = 1000)
+
+#compute the sample statistic for each plate_group
+p_hat <- Y22322 %>% 
+  group_by(plate_group_id) %>%
+  summarize(mean_assay_value = mean(assay_value))
+
+#compute the sample statistic for each resampled plate_group
+p_hat_star <- bootstrap_sampling %>%
+  summarise(mean_assay_value = mean(assay_value))
+
+#compare variability of the two
+p_hat %>% summarise(sd(mean_assay_value))
+p_hat_star %>% summarise(sd(mean_assay_value))
+
+
+```
 
 We are 95% confident that the true proportion lies within the range of the confidence interval
 bootstrapping repeatedly samples from the original sample.  
 * sample with replacement
 
 *Standard Error* describes how the statistic varies around parameter.  
-* variability of the sample proportion. 
+* variability of the sample proportion (p^*)
 
 Approximately 95% of samples will produce p^'s within 2SE of the center.
 
