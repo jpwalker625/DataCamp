@@ -32,9 +32,11 @@ p <- predict(object = model, newdata = diamonds)
 #compute errors:
 error <- p - diamonds$price
 
-Calculate RMSE:
+#Calculate RMSE:
 sqrt(mean(error^2))
 ```
+
+# Part 2) Out-of-sample error
 
 Out-of-sample error  
 * We Want models that don't overfit, and generalize well
@@ -87,6 +89,7 @@ error <- p - test$price
 sqrt(mean(error^2))
 ```
 
+# Part 3) Cross-Validation
 
 Cross-Validation
 * 11x is time expensive as fitting a single model.
@@ -156,3 +159,82 @@ Boston.model.repeated.predictions <- predict(Boston.model.repeated, BostonHousin
 plot(x = Boston.model.predictions, y = Boston.model.repeated.predictions)
 ```
 
+# Part 4) Logistic Regression
+
+Classification Models are used to determine a categorical (qualitative) target variable. 
+
+Rules for training and testing are the same as regression (quantitative) models.
+
+We will use the SONAR datatset which is part of the mlbench package.
+
+```{r classification model using SONAR}
+#load the Sonar dataset to the enviornment
+data("Sonar")
+
+# Shuffle row indices: rows
+rows <- sample(nrow(Sonar))
+
+# Randomly order data: Sonar
+Sonar <- Sonar[rows,]
+
+# Identify row to split on: split
+split <- round(nrow(Sonar) * .6)
+
+# Create train (60%)
+train <- Sonar[1:split, ]
+
+# Create test (40%)
+test <- Sonar[(split + 1): nrow(Sonar), ]
+
+```
+
+The `glm` function is a logistic regression model function which allows for more variet types of regression modek.
+
+we will use the argument `family = "binomial"` to specify we want logistic regression.
+
+```{r logistic regression}
+# Fit glm model: model
+model <- glm(Class ~ ., train, family = "binomial")
+model
+# Predict on test: p
+p <- predict(model, test, type = "response")
+p
+```
+
+Confusion Matrix reveals how confused the model is.
+
+                 Reference 
+           Yes               No 
+    Yes  True Positive   False Positive 
+    No   False Negative  True Negative 
+ 
+Prediction (on the Y axis)
+ 
+The Sensitivity tell you the True Positive Rate
+The Specificity tell you the true negative rate
+
+```{r COnfusion Matrix}
+# Calculate class probabilities: p_class
+p_class <- ifelse(p > .5, "M", "R")
+p_class
+# Create confusion matrix
+confusionMatrix(p_class, test$Class)
+
+```
+
+Class Probabilities & Class Predictions
+
+Let's increase the cutoff to 90% (.9) so that our true positive rate is smaller
+
+```{r }
+
+# Apply threshold of 0.9: p_class
+p_class <- ifelse(p > .9, "M", "R")
+
+
+# Create confusion matrix
+confusionMatrix(p_class, test$Class)
+
+```
+
+In contrast we can make the cutoff 10% to increase the amount of mines that are predicted with lower certainty. 
