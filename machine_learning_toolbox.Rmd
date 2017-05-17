@@ -188,9 +188,11 @@ test <- Sonar[(split + 1): nrow(Sonar), ]
 
 ```
 
-The `glm` function is a logistic regression model function which allows for more variet types of regression modek.
+The `glm` function is a logistic regression model function which allows for more variet types of regression model.
 
-we will use the argument `family = "binomial"` to specify we want logistic regression.
+*glm* is an abbreviation for generalized linear model
+
+We will use the argument `family = "binomial"` to specify we want logistic regression.
 
 ```{r logistic regression}
 # Fit glm model: model
@@ -226,7 +228,7 @@ Class Probabilities & Class Predictions
 
 Let's increase the cutoff to 90% (.9) so that our true positive rate is smaller
 
-```{r }
+```{r probabilities/predictions}
 
 # Apply threshold of 0.9: p_class
 p_class <- ifelse(p > .9, "M", "R")
@@ -238,3 +240,65 @@ confusionMatrix(p_class, test$Class)
 ```
 
 In contrast we can make the cutoff 10% to increase the amount of mines that are predicted with lower certainty. 
+
+```{r probabilities/predictions 2 }
+p_class <- ifelse(p> .1, "M", "R")
+
+confusionMatrix(p_class, test$Class)
+
+```
+
+
+# Part 5)The ROC curve
+
+ROC Curve - Receiver Operating Characteristic Curve
+Developed during WW2 to identify bombers
+
+Purpose of the ROC curve is to evaluate all possible thresholds for splitting predicted probabilities into predicted classes.
+
+**The `caTools` package is useful for computing ROC curves**
+
+Primarily the `colAUC()` function
+
+```{r ROC curve}
+library(caTools)
+# Predict on test: p
+p <- predict(model, test, type = "response")
+
+# Make ROC curve
+colAUC(p, test$Class, plotROC = TRUE)
+```
+
+Area Under the Curve: AUC
+
+Ranges from 0 to 1 where:  
+
+* 0.5 = random guessing
+* 1 = model always right
+* 0 = model always wrong
+
+Can think about AUC as a letter grade: .9 = A, .8 = B, ...etc...
+
+
+```{r calculating AOC}
+# traincontrol is part of the caret package
+myControl <- trainControl(
+  method = "cv",
+  number = 10,
+  summaryFunction = twoClassSummary,
+  classProbs = TRUE, # IMPORTANT!
+  verboseIter = TRUE
+)
+
+# using the mycontrol object above, we can fit a model that uses AUC rather than accuracy to fit/evaluate the model
+# Train glm with custom trainControl: model
+model <- train(form = Class ~ ., data =  Sonar, method = "glm", trControl = myControl)
+
+
+# Print model to console
+print(model)
+
+```
+
+
+
