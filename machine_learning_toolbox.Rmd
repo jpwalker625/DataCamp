@@ -36,7 +36,7 @@ error <- p - diamonds$price
 sqrt(mean(error^2))
 ```
 
-# Part 2) Out-of-sample error
+## Out-of-sample error
 
 Out-of-sample error  
 * We Want models that don't overfit, and generalize well
@@ -84,12 +84,11 @@ p <- predict(model, test)
 
 # Compute errors: error
 error <- p - test$price
-
 # Calculate RMSE
 sqrt(mean(error^2))
 ```
 
-# Part 3) Cross-Validation
+## Cross-Validation
 
 Cross-Validation
 * 11x is time expensive as fitting a single model.
@@ -159,7 +158,7 @@ Boston.model.repeated.predictions <- predict(Boston.model.repeated, BostonHousin
 plot(x = Boston.model.predictions, y = Boston.model.repeated.predictions)
 ```
 
-# Part 4) Logistic Regression
+# Part 2) Logistic Regression
 
 Classification Models are used to determine a categorical (qualitative) target variable. 
 
@@ -188,7 +187,7 @@ test <- Sonar[(split + 1): nrow(Sonar), ]
 
 ```
 
-The `glm` function is a logistic regression model function which allows for more variet types of regression model.
+The `glm` function is a logistic regression model function which allows for more varied types of regression model.
 
 *glm* is an abbreviation for generalized linear model
 
@@ -196,13 +195,17 @@ We will use the argument `family = "binomial"` to specify we want logistic regre
 
 ```{r logistic regression}
 # Fit glm model: model
-model <- glm(Class ~ ., train, family = "binomial")
+model <- glm(Class ~ ., 
+             train, 
+             family = "binomial")
 model
 # Predict on test: p
 p <- predict(model, test, type = "response")
 p
 ```
 
+
+## The Confusion Matrix
 Confusion Matrix reveals how confused the model is.
 
                  Reference 
@@ -215,7 +218,7 @@ Prediction (on the Y axis)
 The Sensitivity tell you the True Positive Rate
 The Specificity tell you the true negative rate
 
-```{r COnfusion Matrix}
+```{r Confusion Matrix}
 # Calculate class probabilities: p_class
 p_class <- ifelse(p > .5, "M", "R")
 p_class
@@ -224,7 +227,7 @@ confusionMatrix(p_class, test$Class)
 
 ```
 
-Class Probabilities & Class Predictions
+## Class Probabilities & Class Predictions
 
 Let's increase the cutoff to 90% (.9) so that our true positive rate is smaller
 
@@ -249,7 +252,7 @@ confusionMatrix(p_class, test$Class)
 ```
 
 
-# Part 5)The ROC curve
+## The ROC curve
 
 ROC Curve - Receiver Operating Characteristic Curve
 Developed during WW2 to identify bombers
@@ -292,7 +295,10 @@ myControl <- trainControl(
 
 # using the mycontrol object above, we can fit a model that uses AUC rather than accuracy to fit/evaluate the model
 # Train glm with custom trainControl: model
-model <- train(form = Class ~ ., data =  Sonar, method = "glm", trControl = myControl)
+model <- train(form = Class ~ ., 
+               data =  Sonar, 
+               method = "glm", 
+               trControl = myControl)
 
 
 # Print model to console
@@ -301,4 +307,425 @@ print(model)
 ```
 
 
+# Part 3) Tuning Model Parameters to Improve Performance
 
+Random Forests 
+* very flexible
+* good for beginners
+* robust overfitting
+* yields are very accurate, non-linear models
+
+hyperparameters must be estimated and can impact the model fit.
+
+Follows the decision tree pattern
+* improves the accuracy by fitting many trees
+* fits each to a bootstrap sample of the data
+* bootstrap aggregation, or bagging
+* randomly sample columns at each split
+
+In the following example we will use the 'ranger' function part of the `ranger` package.
+This is a rewrite of the classic `randomForest` package and fits models much faster giving the same results.
+
+```{r random forests}
+library(ranger)
+
+#download the wine quality datasets
+whites <- read.csv("https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-white.csv", header = TRUE, sep = ";")
+reds <- read.csv("https://archive.ics.uci.edu/ml/machine-learning-databases/wine-quality/winequality-red.csv", header = TRUE, sep = ";")
+
+whites$color <- factor("white")
+reds$color <- factor("red")
+
+wine <-  rbind(whites, reds)
+
+# Fit random forest: model
+wine_model <- train(
+  quality ~ .,
+  tuneLength = 1,
+  data = wine, method = "ranger",
+  trControl = trainControl(method = "cv", number = 5, verboseIter = TRUE)
+)
+
+# Print model to console
+wine_model
+```
+
+## tuning
+
+Random forests require tuning
+
+hyperparamters control how the model is fit: these must be selected "by hand" before the model is fit
+
+Most important hyperparameter is 'mtry'  
+
+* Number of randomly selected variables used at each split
+* lower value = more random
+* higher value = less random
+
+It is difficult to know the best value in advance
+
+the `tunelength` argument will specify how many variations to try
+Another way to think of this is that the higher the tunelength, the more models will be fit allowing you to potentially find a better model.
+
+```{r tunelength}
+# Fit random forest: model
+wine_model2 <- train(
+  quality ~ .,
+  tuneLength = 3,
+  data = wine, method = "ranger",
+  trControl = trainControl(method = "cv", number = 5, verboseIter = TRUE)
+)
+
+# Print model to console
+wine_model2
+
+# Plot model
+plot(wine_model2)
+
+```
+
+## custom tuning grids
+
+```{r custom tuning grids}
+# create custom tuning grid
+mygrid <- data.frame(mtry = c(2, 3, 7, 11, 12))
+
+# Fit random forest: model
+wine_model3 <- train(
+  quality ~ .,
+  tuneGrid = mygrid,
+  data = wine, method = "ranger",
+  trControl = trainControl(method = "cv", number = 5, verboseIter = TRUE)
+)
+
+# Print model to console
+wine_model3
+
+# Plot model
+plot(wine_model3)
+
+```
+
+## glmnet
+
+* an extension of glm models wit built-in variable selection
+
+* Helps deal with collinearity and smaller sample sizes
+
+* Two primary forms:  
+    + Lasso regression (penalizes # of non-zero coeffs)
+    + Ridge regression (penalizes absolute magnitude of coeffs)
+* Attempts to fins a parsimonious model (simple)
+* Pairs well with random forest models
+
+many paremeters to tune:
+alpha [0,1]: pure lasso to pure ridge
+lambda (0, infinite): size of the penalty
+
+```{r glmnet}
+library(glmnet)
+
+# Create custom trainControl: myControl
+myControl <- trainControl(
+  method = "cv", number = 10,
+  summaryFunction = twoClassSummary,
+  classProbs = TRUE, # IMPORTANT!
+  verboseIter = TRUE
+)
+
+glmnet_model <- train(
+  Class ~ ., #formula
+  Sonar, #data
+  method = 'glmnet', #type of model
+  trControl = myControl)
+
+# Print model to console
+glmnet_model
+
+# Print maximum ROC statistic
+max(glmnet_model[["results"]])
+```
+
+## glmnet with custom tuning grid
+
+2 tuning parameters: alpha and lambda
+
+for 1 alpha, all values of lambda fit simultaneously
+
+many models for the "price" of one
+
+
+```{r glmnet tuning}
+glmnet_model2 <- train(
+  Class ~ ., 
+  Sonar,
+  tuneGrid = expand.grid(alpha = 0:1,
+                         lambda = seq(0.0001, 1, length = 20)),
+  method = "glmnet",
+  trControl = myControl
+)
+
+# Print model to console
+glmnet_model2
+
+# Print maximum ROC statistic
+max(glmnet_model2[["results"]][["ROC"]])
+
+plot(glmnet_model2)
+```
+
+# Pre-processing Data 
+
+## median imputation
+
+Replace missing values with median values to run your model.
+
+
+```{r median imputation}
+#retrieve breast cancer (WI) dataset from the UCI machine learning repository
+
+data("BreastCancer")
+
+#split daya into 'formula' and response sets
+breast_cancer_x <- BreastCancer[2:10] #predictors, a.k.a. formula variables
+breast_cancer_x <-  map_df(.x = breast_cancer_x, .f = as.integer)
+
+breast_cancery_y <- BreastCancer$Class # the response variable
+
+breastcancer_model <- train(x = breast_cancer_x, #another way to  specify the model formula
+                            y = breast_cancery_y, #y = the response variable
+                            method = "glm",
+                            trControl = myControl,
+                            preProcess = "medianImpute")
+breastcancer_model
+```
+
+## KNN Imputation
+
+While median imputation is a fast and useful method for dealing with missing values, it can prdoduce incorrect results if there is systematic bias in the dataset.
+
+K nearest neighbors imputation imputes based on "similar" non-missing rows.
+
+```{r KNN Imputation}
+
+breastcancer_model2 <- train(x = breast_cancer_x,
+                             y = breast_cancery_y,
+                             method = "glm",
+                             trControl = myControl,
+                             preProcess = 'knnImpute')
+
+breastcancer_model2
+```
+
+We can compare the median vs. knn imputation using the `resample` function
+
+```{r resample}
+
+
+resamps <- resamples(list(medimpute = breastcancer_model,
+                          knnimpute = breastcancer_model2))
+
+dotplot(resamps, metric = "ROC")
+```
+
+## Multiple preprocessing methods
+
+Preprocessing cheat sheet:
+
+1) Start with median imputation.
+    + try KNN if data is not missing at random.
+2) For linear models, Always:
+    + center & scale
+    + try PCA and spatial design
+3) Tree-based models don't need much preprocessing.
+
+centering and scaling the data puts it into standard deviation terms where the mean = 0 and sd = 1.
+center does: subtract the mean of the column to the values in that column.
+scale divides this new value by the standard deviation.
+
+
+```{r multiple preprocessing methods}
+
+breast_cancer_model3 <- train(x  = breast_cancer_x,
+                              y = breast_cancery_y,
+                              method = "glm",
+                              trControl = myControl,
+                              preProcess = c("medianImpute", "center", "scale"))
+breast_cancer_model3
+```
+
+## Handling Low-information predictors
+
+Variables that don't contain much information should not be included in the modeling. These types of columns include:  
+* Constsant (no variance) and nearly constant (little variance) variables.
+* It is easy for one fold of CV to end up with constant column.
+* Can cause problems for your models
+
+```{r low-info predictors}
+# retrieve the blood brain dataset from the caret package
+data(BloodBrain)
+bloodbrain_x <- bbbDescr
+bloodbrain_y <- logBBB
+
+remove_cols <- nearZeroVar(bloodbrain_x, names = TRUE, 
+                           freqCut = 2, uniqueCut = 20)
+remove_cols
+
+all_cols <- names(bloodbrain_x)
+
+
+bloodbrain_trimmed <- bloodbrain_x[, setdiff(all_cols, remove_cols)] 
+names(bloodbrain_trimmed)
+
+bloodbrain_trimmed_model <- train(x = bloodbrain_trimmed, 
+                                  y = bloodbrain_y, 
+                                     method = "glm")
+bostonhousing_trimmed_model
+
+# another way we could do this is using the preprocess argument "nzv"
+
+bloodbrain_preprocessmodel <- train(x = bloodbrain_x,
+                                    y = bloodbrain_y,
+                                    method = "glm",
+                                    preProcess = "nzv")
+bloodbrain_preprocessmodel
+```
+
+## Principle Components Analysis
+
+```{r pca model}
+bloodbrain_pcamodel <- train(x = bloodbrain_x,
+                             y = bloodbrain_y,
+                             method = "glm",
+                             preProcess = "pca")
+bloodbrain_pcamodel
+```
+
+# Part 5 - Bringing it all together
+
+In this section we will use a real world dataset that focuses on the variety of telecom customers and we will focus on predicting which customers will ancer their service (churn).
+
+First, we need to create a reusable `trainConrol` object which will allow us to reliably compare models on the same data.
+
+```{r Churn Case Study}
+library(C50) # contains the churn dataset(s)
+data(churn) # churnTest and churnTrain
+
+
+# Create custom indices: myFolds
+myFolds <- createFolds(churnTrain$churn, k = 5)
+
+# Create reusable trainControl object: myControl
+ChurnControl <- trainControl(
+  summaryFunction = twoClassSummary,
+  classProbs = TRUE, # IMPORTANT!
+  verboseIter = TRUE,
+  savePredictions = TRUE,
+  index = myFolds
+)
+```
+
+## glmnet models
+
+Linear models with built in variable selection.
+
+It is a great baseline model with the following advantages:
+* Fits quickly  
+* Ignores Noisy Variables  
+* Provides interpretable coefficients  
+
+Simple, Fast, Interpretable
+
+glmnet penalizes linear and logistic regression models on the the size and number of coefficients to help prevent overfitting.
+
+```{r glmnet}
+# Fit glmnet model: model_glmnet
+model_glmnet <- train(churn ~., 
+                      churnTrain,
+                      metric = "ROC",
+                      method = "glmnet",
+                      trControl = ChurnControl)
+
+model_glmnet
+```
+
+## Random Forest Review
+
+* Slower to fit than glmnet
+* Less interpretable
+* Often (but not always) more accurate than glmnet
+* Easier to tune
+* Require little preprocessing
+* Capture threshold effects and variable interactions
+
+```{r random_forest review}
+
+model_rf <- train(
+  churn ~.,
+  churnTrain,
+  metric = "ROC",
+  method = "ranger",
+  trControl = ChurnControl
+)
+
+model_rf
+```
+
+## Comparing Models
+
+Ensure they were fit on the same training and test sets.
+
+Selection criteria:
+* Highest average AUC
+* Lowest standard deviation in AUC
+* Resample() function is our friend
+
+```{r comparing models using resamples}
+# Create model_list
+model_list <- list(glmnet = model_glmnet,  random_forest = model_rf)
+
+# Pass model_list to resamples(): resamples
+resamples <- resamples(model_list)
+
+# Summarize the results
+summary(resamples)
+
+```
+
+## Visualizing the models
+
+caret provides various methods for comparing models visually all based off of the resamples function.
+
+The **box-and-whisker** plot allows you to compare the distribution of the predictive accuracy (AUC in this case).
+
+In general we want the model with the higher median AUC, as well as the smaller ranged between the min and max AUC.
+
+```{r bwplot}
+# by default, bwplot provides 3 metrics if not specified
+bwplot(resamples)
+
+bwplot(resamples, metric = "ROC")
+```
+
+The **scatterplot**, also known as the *xy-plot* shows you how similar the two models' performances are on different folds.
+
+```{r scatterplot}
+
+xyplot(resamples, metric = "ROC")
+
+```
+
+It appears that the random forest model has the highest accuracy across all five folds in the training data.
+Let's apply the model to the Test set now.
+
+```{r apply model to test set}
+
+p_train <- predict(model_rf)
+
+summary(p_train)
+summary(churnTrain$churn)
+p_test <- predict(model_rf, newdata = churnTest) 
+
+summary(p_test)
+summary(churnTest$churn)
+```
