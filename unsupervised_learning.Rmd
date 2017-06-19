@@ -1,0 +1,237 @@
+---
+title: "Unsupervised Learning""
+output: html_notebook
+---
+```{r setup}
+library(tidyverse)
+
+```
+
+# Part 1)
+
+What is unsupervised learning?
+
+3 types of machine learning:
+
+Unsupervised  
+* finiding structure in unlabeled data
+* finding homogeneous subgroups within groups of the data
+* dimensionality reduction
+
+Supervised - making predictions based on labeled data
+
+Reinforcement - computer learns from feedback operating in a real or synthetic environment
+
+*labeled vs. unlabeled data is differentiated by grouping.*
+
+another way to think about this is clustering
+
+
+
+## k-means clustering
+
+Used to find homogeneous sub-groups within a population
+
+`kmeans(x, centers = , nstart = )`
+
+one observation per row, one feature per column
+
+k-means has a random component
+
+run multiple time to improve odds of the best model
+
+```{r intro to kmeans}
+
+ggplot(iris, aes(x = Sepal.Length, y = Petal.Length, color = Species)) +
+         geom_point()
+
+iris_subset <- iris %>% select(Sepal.Length, Sepal.Width)
+
+#kmeans can not take data frames with non-numeric arguments
+km.out <- kmeans(x = iris_subset, centers = 3, nstart = 20)
+
+summary(km.out)
+
+#you can print specific components of the kmeans model using the $
+km.out$cluster
+
+print(km.out)
+
+#And finally, we can plot the data:
+plot(iris_subset, col = km.out$cluster, main = "k-means with 3 clusters, Iris data")
+```
+
+How does k-means work?
+
+Random Cluster Assignment
+Cluster Centers Are Calculated - Average (mean) Position of all the points of that subgroup (cluster)
+This is iteration 1
+The algorithm stops when the mean position calculated for each cluster does not change from one iteration to the next
+
+
+**Model Selection**
+Best outcome is based on the total within cluster sum of squares.
+Goal is to find the global minimum (minimize the sum of squares)
+Similar to calculating the residuals of a regression model
+
+**How to determine the number of clusters without knowing beforehand**
+Trial and Error is not the best apporach, but it can help.
+"scree plot"
+
+Look for the elbow - this is where the total SS (sum of squares) drastically decreases based on the number of clusters. This elbow point serves as a good approximation of how many clusters to use.
+
+It is important to use the `set.seed` function for reproducibility since k-means uses randomization to assign clusters.
+
+```{r visualizing random k-means algorithms}
+
+# Set up 2 x 3 plotting grid
+par(mfrow = c(2, 3))
+
+# Set seed
+set.seed(1)
+
+for(i in 1:6) {
+  # Run kmeans() on iris_subset with three clusters and one start
+  km.out <- kmeans(iris_subset, centers = 3, nstart = 1)
+  
+  # Plot clusters
+  plot(iris_subset, col = km.out$cluster, 
+       main = km.out$tot.withinss, 
+       xlab = "", ylab = "")
+}
+
+#determine how many clusters is optimal
+
+# Initialize total within sum of squares error: wss
+wss <- 0
+
+# For 1 to 15 cluster centers
+for (i in 1:15) {
+  km.out <- kmeans(iris_subset, centers = i, nstart = 20)
+  # Save total within sum of squares to wss variable
+  wss[i] <- km.out$tot.withinss
+}
+
+# Plot total within sum of squares vs. number of clusters
+plot(1:15, wss, type = "b", #b for both: points and lines, 
+     xlab = "Number of Clusters", 
+     ylab = "Within groups sum of squares")
+
+# Set k equal to the number of clusters corresponding to the elbow location
+k <- 2
+```
+
+The default iterations run by kmeans is **10**
+
+When dealing with real data, sometimes you will run into problems/errors in which the number of iterations to find a stopping point is not enough. kmeans takes on the argument `iteration.max` to circumvent this problem.
+
+**another important thing to know is the within cluster sum of squares by cluster parameter**
+the between SS/ total SS = some %
+The % is the measurment of total variance in the data that is explained by the clustering. 
+
+In the following example we'll using the pokemon data set available from kaggle
+
+https://www.kaggle.com/abcsds/pokemon
+
+```{r kmeans using pokemon data set}
+pokemon <- read.csv("Pokemon.csv")
+
+colnames(pokemon)
+#only select columns of interest
+pokemon_subset <- pokemon %>% select(6:11)
+colnames(pokemon_subset)
+
+#what happens if we use a # of iterations that is insufficient?
+kmeans(pokemon_subset, centers = 3, nstart = 20, iter.max = 3)
+
+
+# Initialize total within sum of squares error: wss
+wss <- 0
+
+# Look over 1 to 15 possible clusters
+for (i in 1:15) {
+  # Fit the model: km.out
+  km.out <- kmeans(pokemon_subset, centers = i, nstart = 20, iter.max = 50)
+  # Save the within cluster sum of squares
+  wss[i] <- km.out$tot.withinss
+}
+
+# Produce a scree plot
+plot(1:15, wss, type = "b", 
+     xlab = "Number of Clusters", 
+     ylab = "Within groups sum of squares")
+
+# Select number of clusters
+k <- 3
+
+# Build model with k clusters: km.out
+km.out <- kmeans(pokemon_subset, centers = 3, nstart = 20, iter.max = 50)
+
+# View the resulting model
+km.out
+
+# Plot of Defense vs. Speed by cluster membership
+plot(pokemon_subset[, c("Defense", "Speed")],
+     col = km.out$cluster,
+     main = paste("k-means clustering of Pokemon with", k, "clusters"),
+     xlab = "Defense", ylab = "Speed")
+```
+
+
+# Part 2)
+
+Hierarchical Clustering is used when the number of clusters is not known ahead of time. 
+
+Bottom-Up and Top-Down clustering types.
+
+Bottom-Up
+Each point is a single cluster. The closest clusters are grouped into one cluster. This goes on and on until only one cluster remains.
+
+```{r hierarchical clustering}
+
+#continue with the iris
+hclust.out <- hclust(dist(iris_subset))
+
+summary(hclust.out)
+
+#Dendrogram
+plot(hclust.out)
+
+#cuttree allows you to cut a hierarchical model. `h` allows you to cut the tree based on a certain height while k denotes a certain number of clusters to cut the tree by. The return values = the cluster number of each observation in the dataset.
+
+# Cut by height
+cutree(hclust.out, h = 1.8)
+
+# Cut by number of clusters
+cutree(hclust.out, k = 4)
+
+```
+
+How is the distance between clusters determined?
+Four methods:
+Complete: pairwise similarity between all observations in cluster 1 and 2, and uses largest of similarities.
+Single: smallest of ismilarities
+Average: average of similarities
+Centroid: finds the centroid of cluster 1 and 2, and uses the similarity between two centroids.
+
+Normalize the data if the the data is on different scales
+
+```{r scaling clusters}
+
+# View column means
+colMeans(pokemon_subset)
+
+# View column standard deviations
+apply(pokemon_subset, FUN = sd, MARGIN = 2)
+
+# Scale the data
+pokemon.scaled <- scale(pokemon_subset)
+pokemon.scaled
+# Create hierarchical clustering model: hclust.pokemon
+hclust.pokemon <- hclust(dist(pokemon.scaled), method = "complete")
+
+#Let's quickly recap what you just did. You first checked to see if the column means and standard deviations vary. Because they do, you scaled the data, converted the scaled data to a similarity matrix and passed it into the hclust() function. 
+
+plot(hclust.pokemon)
+
+```
