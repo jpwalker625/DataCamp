@@ -1,0 +1,335 @@
+---
+title: "Text Mining: Bag of Words"
+output: html_notebook
+---
+
+# What is text mining?
+
+The process of distilling **actionable insights** from text.
+
+The text mining workflow:
+
+1) Define problem & specific goals
+2) Identify text to be collected
+3) Text orginization
+4) Feature extraction
+5) Analysis
+6) Reach an insight, recommendation, or output
+
+Semantic parsing: word order & sentence structure matters
+
+With bag of words, each individual word/phrase is treated separately.
+
+The `qdap` package is useful for counting words. Specifically, the function `freq_terms(text, top)` provides a fast, efficient way of doing so. Let's take a look below.
+
+```{r}
+Sys.setenv(JAVA_HOME='C:\\Program Files\\Java\\jre1.8.0_131')
+library(rJava)
+# Load qdap
+library(qdap)
+
+# Create variable new text
+new_text <- "DataCamp is the first online learning platform that focuses on building the best learning experience specifically for Data Science. We have offices in Boston and Belgium and to date, we trained over 250,000 (aspiring) data scientists in over 150 countries. These data science enthusiasts completed more than 9 million exercises. You can take free beginner courses, or subscribe for $25/month to get access to all premium courses."
+
+# Print new_text to the console
+print(new_text)
+
+# Find the 10 most frequent terms: term_count
+term_count <- freq_terms(new_text, 10)
+
+# Plot term_count
+plot(term_count)
+```
+
+For the following work, we can use the example data set `Data` contained in the qdap package.
+
+
+```{r}
+#define data
+df <- qdap::DATA
+
+# View the structure of df
+str(df)
+
+# Print out the number of rows in df
+nrow(df)
+
+# Isolate text from df: dialogue_df
+dialogue_df <- df$state
+```
+
+Use thr `tm` package to create a word corpus. A corpus is a collection of documents.
+
+There are two kinds of the corpus data type, the permanent corpus, PCorpus, and the volatile corpus, VCorpus. In essence, the difference between the two has to do with how the collection of documents is stored in your computer. In this course, we will use the volatile corpus, which is held in your computer's RAM rather than saved to disk, just to be more memory efficient.
+
+```{r}
+# Load tm
+library(tm)
+
+# Make a vector source: dialogue_source
+
+dialogue_source <- VectorSource(dialogue_df)
+dialogue_source
+
+```
+
+Now that we've converted our vector to a Source object, we pass it to another tm function, VCorpus(), to create our volatile corpus. Pretty straightforward, right?
+
+The VCorpus object is a nested list, or list of lists. At each index of the VCorpus object, there is a PlainTextDocument object, which is essentially a list that contains the actual text data (content), as well as some corresponding metadata (meta). It can help to visualize a VCorpus object to conceptualize the whole thing.
+
+```{r}
+# Make a volatile corpus: dialogue_corpus
+dialogue_corpus <- VCorpus(dialogue_source)
+
+#Print out dialogue corpus
+dialogue_corpus
+
+#subset data corresponding to the 7th line
+dialogue_corpus[[7]]
+
+#subset the content correpsonding to the 7th line
+dialogue_corpus[[7]][1]
+```
+
+Use example data to make a corpus from both a vector and a dataframe:
+
+```{r}
+#use qdap example dataset
+example_text <- data.frame(num = c(1,2,3), 
+                           Author1 = c("yes", "no", "maybe so"), 
+                           Author2 = c("Hello", "How are you?", "Am I doing this right?"), stringsAsFactors = FALSE)
+
+# Print example_text to the console
+str(example_text)
+
+# Create a DataframeSource on column 2 nd 3: df_source
+df_source <- DataframeSource(example_text[ , 2:3])
+
+# Convert df_source to a corpus: df_corpus
+df_corpus <- VCorpus(df_source)
+
+# Examine df_corpus
+df_corpus
+
+# Create a VectorSource on column 3: vec_source
+vec_source <- VectorSource(example_text[,3])
+
+# Convert vec_source to a corpus: vec_corpus
+vec_corpus <- VCorpus(vec_source)
+
+# Examine vec_corpus
+vec_corpus
+```
+
+# Cleaning & Preprocessing Data
+
+## Useful preprocssing functions
+
+There are a number of useful functions available in the `tm` package useful for cleaning up text.
+
+tolower() - actually a base r function  
+removePunctuation()  
+removeNumbers()  
+stripWhiteSpace()  
+removeWords()  
+
+
+```{r cleaning and preprocessing text}
+# Create the object: text
+text <- "<b>She</b> woke up at       6 A.M. It\'s so early!  She was only 10% awake and began drinking coffee in front of her computer."
+
+# All lowercase
+tolower(text)
+
+# Remove punctuation
+removePunctuation(text)
+
+# Remove numbers
+removeNumbers(text)
+
+# Remove whitespace
+stripWhitespace(text)
+```
+
+The qdap package offers other text cleaning functions. Each is useful in its own way and is particularly powerful when combined with the others.
+
+bracketX(): Remove all text within brackets (e.g. "It's (so) cool" becomes "It's cool")  
+replace_number(): Replace numbers with their word equivalents (e.g. "2" becomes "two")  
+replace_abbreviation(): Replace abbreviations with their full text equivalents (e.g. "Sr" becomes "Senior")  
+replace_contraction(): Convert contractions back to their base words (e.g. "shouldn't" becomes "should not")  
+replace_symbol() Replace common symbols with their word equivalents (e.g. "$" becomes "dollar")  
+
+
+```{r cleaning with qdap}
+#example text to clean
+text
+
+# Remove text within brackets
+bracketX(text)
+
+# Replace numbers with words
+replace_number(text)
+
+# Replace abbreviations
+replace_abbreviation(text)
+
+# Replace contractions
+replace_contraction(text)
+
+# Replace symbols with words
+replace_symbol(text)
+
+```
+
+## Stop words
+Stop words are frequent but often provide little information. The `tm` package contains 174 stop words in the common list.
+
+When using stopwords, you can add your own stop words by making a combinedf vector as in the example below:
+
+```{r stopWords}
+# List standard English stop words
+stopwords("en")
+
+# Print text without standard stop words
+removeWords(text, stopwords("en"))
+
+# Add "coffee" and "bean" to the list: new_stops
+new_stops <- c("coffee", "bean", stopwords("en"))
+
+# Remove stop words from text
+removeWords(text, new_stops)
+```
+
+## Word Stemming
+
+word stemming is another useful preprocessing step.
+
+stem_word()  
+stem_completion()  
+complete_words()  
+
+```{r wordstem/completion}
+# Create complicate
+complicate <- c("complicated", "complication", "complicatedly")
+
+# Perform word stemming: stem_doc
+stem_doc <- stemDocument(complicate)
+stem_doc
+# Create the completion dictionary: comp_dict
+comp_dict <- "complicate"
+
+# Perform stem completion: complete_text 
+complete_text <- stemCompletion(stem_doc, comp_dict)
+
+# Print complete_text
+complete_text
+```
+
+
+Here's another example in which we try to perform word stemming on similar words in the same sentence.
+
+```{r}
+# create text
+text_data <- "In a complicated haste, Tom rushed to fix a new complication, too complicatedly."
+
+#define completed dictionary
+comp_dict <- c("In", "a", "complicate", "haste", "Tom", "rush", "to", "fix", "new", "too")
+
+# Remove punctuation: rm_punc
+rm_punc <- removePunctuation(text_data)
+
+# Create character vector: n_char_vec
+n_char_vec <- unlist(strsplit(rm_punc, split = ' '))
+
+# Perform word stemming: stem_doc
+stem_doc <- stemDocument(n_char_vec) 
+
+# Print stem_doc
+stem_doc
+
+# Re-complete stemmed document: complete_doc
+complete_doc <- stemCompletion(stem_doc, comp_dict) 
+
+# Print complete_doc
+complete_doc
+```
+
+The `tm_map` function is a useful way to apply cleaning functions to a corpus.
+
+Notice how the tm package functions do not need content_transformer(), but base R and qdap functions do.
+
+Be careful when creating functions; the order of cleaning steps makes a difference.
+
+```{r tm_map }
+presidents <- data.frame(pres_debate_raw2012, stringsAsFactors = FALSE)
+
+#examine presidents
+str(presidents)
+
+#make presidents a source document
+presidents_source <- DataframeSource(presidents)
+
+#make presidents_source into a corpus
+presidents_corpus <- VCorpus(presidents_source)
+
+#exampine the presidents_corpus
+presidents_corpus[[43]]
+
+#Build a function to clean the corpus
+clean_corpus <- function(corpus){
+  corpus <- tm_map(corpus, stripWhitespace)
+  corpus <- tm_map(corpus, removePunctuation)
+  corpus <- tm_map(corpus, content_transformer(tolower))
+  corpus <- tm_map(corpus, removeWords, stopwords("en"))
+  return(corpus)
+}
+
+# Apply your customized function to the presidents_corpus: clean_corp
+clean_corp <- clean_corpus(presidents_corpus)
+
+# Print out a cleaned up dialogue
+clean_corp[[43]][1]
+
+# Print out the same tweet in original form
+presidents[43, 2]
+
+```
+
+## TDM vs. DTM
+
+
+Document Term Matrix makes each term a column, and each document a row
+```{r DTM}
+# Create the dtm from the corpus: pres_dtm
+pres_dtm <- DocumentTermMatrix(clean_corp)
+
+#print out pres_dtm data
+pres_dtm
+
+#convert DTM to a matrix (pres_m)
+pres_m <- as.matrix((pres_dtm))
+
+dim(pres_m)
+
+#review a portion of the matrix
+pres_m[45:51, 123:130]
+```
+
+
+Where as, a Term Document Matrix makes each row a term, and each column a document.  
+```{r TDM}
+# Create the TDM from the corpus: pres_tdm
+pres_tdm <- TermDocumentMatrix(clean_corp)
+
+#print out pres_tdm data
+pres_tdm
+
+#convert TDM to a matrix (pres_m)
+pres_m <- as.matrix((pres_tdm))
+
+dim(pres_m)
+
+#review a portion of the matrix
+pres_m[123:130, 45:51]
+```
+
