@@ -1,6 +1,8 @@
 ---
-title: "Text Mining: Bag of Words"
-output: html_notebook
+title: 'Text Mining: Bag of Words'
+output:
+  html_notebook: default
+  html_document: default
 ---
 
 # What is text mining?
@@ -23,10 +25,12 @@ With bag of words, each individual word/phrase is treated separately.
 The `qdap` package is useful for counting words. Specifically, the function `freq_terms(text, top)` provides a fast, efficient way of doing so. Let's take a look below.
 
 ```{r}
-Sys.setenv(JAVA_HOME='C:\\Program Files\\Java\\jre1.8.0_131')
-library(rJava)
 # Load qdap
 library(qdap)
+
+#if the qdap package is having trouble with the rJava package, you must direct the system environment to the Java program file
+#Sys.setenv(JAVA_HOME='C:\\Program Files\\Java\\jre1.8.0_131')
+#library(rJava)
 
 # Create variable new text
 new_text <- "DataCamp is the first online learning platform that focuses on building the best learning experience specifically for Data Science. We have offices in Boston and Belgium and to date, we trained over 250,000 (aspiring) data scientists in over 150 countries. These data science enthusiasts completed more than 9 million exercises. You can take free beginner courses, or subscribe for $25/month to get access to all premium courses."
@@ -331,5 +335,107 @@ dim(pres_m)
 
 #review a portion of the matrix
 pres_m[123:130, 45:51]
+```
+
+# Text Mining Visuals
+
+```{r Text Mining Visuals}
+
+# Calculate the rowSums: term_frequency
+term_frequency <- rowSums(pres_m)
+
+# Sort term_frequency in descending order
+term_frequency <- sort(term_frequency, decreasing = TRUE)
+
+# View the top 10 most common words
+head(term_frequency, 10)
+
+# Plot a barchart of the 10 most common words
+barplot(term_frequency[1:10], col = "tan", las = 2)
+```
+
+If you are OK giving up some control over the exact preprocessing steps, then a fast way to get frequent terms is with freq_terms() from qdap.
+
+The function accepts a text variable, which in our case is the tweets$text vector. You can specify the top number of terms to show with the top argument, a vector of stop words to remove with the stopwords argument, and the minimum character length of a word to be included with the at.least argument. qdap has its own list of stop words that differ from those in tm. Our exercise will show you how to use either and compare their results.
+
+Making a basic plot of the results is easy. Just call plot() on the freq_terms() object.
+
+```{r}
+# Create frequency
+frequency <- freq_terms(presidents$dialogue, top = 10, at.least = 3, stopwords = "Top200Words")
+
+# Make a frequency barchart
+plot(frequency)
+
+# Create frequency2
+frequency2 <- freq_terms(presidents$dialogue, top = 10, at.least = 3, stopwords = tm::stopwords("english"))
+
+# Make a frequency2 barchart
+plot(frequency2)
+```
+
+## WordClouds
+
+A word cloud is a visualization of terms. In a word cloud, size is often scaled to frequency and in some cases the colors may indicate another measurement. For now, we're keeping it simple: size is related to individual word frequency and we are just selecting a single color.
+
+As you saw in the video, the `wordcloud()` function works like this:
+
+`wordcloud(words, frequencies, max.words = 500, colors = "blue")`
+
+Text mining analyses often include simple word clouds. In fact, they are probably over used, but can still be useful for quickly understanding a body of text!
+
+```{r wordcloud}
+# Load wordcloud package
+library(wordcloud)
+
+# Print the first 10 entries in term_frequency
+head(term_frequency, 10)
+
+# Create word_freqs
+word_freqs <- data.frame(term = names(term_frequency), num = term_frequency)
+
+# Create a wordcloud for the values in word_freqs
+wordcloud(word_freqs$term, word_freqs$num, max.words = 100, colors = "red")
+```
+
+Our wordcloud is a little boring. Let's fix it up a bit by modifying the color scheme.
+
+```{r wordcloud color mod}
+set.seed(123)
+
+#print list of colors with colors() function
+
+#lets take a sample of 5 colors
+my_colors <- sample(colors(), 4)
+
+wordcloud(word_freqs$term, word_freqs$num, max.words = 100, colors = my_colors)
+
+```
+
+We can also use prebuilt color palettes such as those offered by `RColorBrewer`
+
+Sequential: Colors ascend from light to dark in sequence  
+Qualitative: Colors are chosen for their pleasing qualities together  
+Diverging: Colors have two distinct color spectra with lighter colors in between
+
+To change the colors parameter of the wordcloud() function you can use a select a palette from RColorBrewer such as "Greens". The function `display.brewer.all()` will list all predefined color palettes. More information on ColorBrewer (the framework behind RColorBrewer) is available on its [website](http://colorbrewer2.org/#type=sequential&scheme=BuGn&n=3).
+
+The function brewer.pal() allows you to select colors from a palette. Specify the number of distinct colors needed (e.g. 8) and the predefined palette to select from (e.g. "Greens"). Often in word clouds, very faint colors are washed out so it may make sense to remove the first couple from a brewer.pal() selection, leaving only the darkest.
+
+```{r RColorBrewer}
+#load RColorBrewer library
+library(RColorBrewer)
+
+# List the available colors
+display.brewer.all()
+
+# Create purple_orange
+purple_orange <- brewer.pal(n = 8, name = "PuOr")
+
+# Drop 2 faintest colors
+purple_orange <- purple_orange[-(1:2)]
+
+# Create a wordcloud with purple_orange palette
+wordcloud(word_freqs$term, word_freqs$num, max.words = 100, colors = purple_orange)
 ```
 
