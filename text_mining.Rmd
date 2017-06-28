@@ -525,7 +525,7 @@ We can use the existing matrix consisting of the frequency of words from each do
 
 ```{r pyramid plot}
 #create common_words
-common_words <- subset(all_m, all_m[ ,1] > 0 & all_m[, 2] >0)
+common_words <- subset(all_m, all_m[ ,1] > 0 & all_m[, 2] > 0)
 
 #create difference
 difference <- abs(common_words[,1] - common_words[, 2])
@@ -556,7 +556,6 @@ pyramid.plot(lx = top_25df$Hamlet,
              laxlab = NULL,
              raxlab = NULL,
              unit = NULL)
-
 ```
 
 ## Word Network
@@ -570,9 +569,10 @@ In a network graph, the circles are called nodes and represent individual terms,
 ```{r Word Network}
 
 # Word association
-word_associate(hamlet$dialogue, match.string =  "queen", 
+word_associate(hamlet$dialogue,
+               match.string = "queen", 
                stopwords = stopwords(kind = "en"),
-               network.plot = TRUE, cloud.colors = sample(colors(), 2))
+               network.plot = TRUE, cloud.colors = c("red", "steelblue3"))
 
 # Add title
 title(main = "Words Associations to \"queen\" in the text of Shakespeare's Hamlet")
