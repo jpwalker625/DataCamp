@@ -1,0 +1,211 @@
+---
+title: "Importing Data In R"
+output:
+  html_notebook: default
+  html_document: default
+---
+
+```{r setup}
+#set global document options
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+
+#load 
+library(tidyverse)
+```
+
+This tutorial will provide various examples of how to import data into R. In addition to the useful base R functions provided, we will cover various packages helpful for importing data. 
+
+The `utils` package has a built in function to download files from the web. It is aptly named `download.file`.
+
+```{r}
+#get the working directory
+getwd()
+
+#get t  he path of the file you want to download
+potatoes <- "http://raw.githubusercontent.com/jpwalker625/tutorials/master/data/potatoes.csv"
+
+#download the file, no need to assign this opertion to a variable.
+download.file(url = potatoes, destfile = "c:/workspace/data/potatoes.csv", method = "libcurl")
+
+#list the working directory to see only the .csv files
+dir(path = "c:/workspace/data", pattern = ".csv")
+
+head(read.csv("c:/workspace/data/potatoes.csv"))
+```
+
+##readxl
+
+`read_excel` is a non-specific version of `read_xls` & `read_xlsx`. It auto detects the format of the file from the file extension.
+
+```{r}
+#load library
+library(readxl)
+
+lt4_data <- "https://github.com/jpwalker625/tutorials/blob/master/data/lt4_data.xls?raw=true"
+
+download.file(url = lt4_data, destfile = "c:/workspace/data/lt4_data.xls", mode = "wb")
+
+lt4_data <- read_excel(path = "c:/workspace/data/lt4_data.xls")
+
+```
+
+## gdata
+
+The `gdata` package has various tools for data manipulation. One of the most useful functions is `read.xls`.
+
+`gdata` uses perl to convert xls --> csv files and reads them in using the `read.csv()` function. `read.csv()` is a wrapper around the `read.table()` function which has > 15 arguments. Therfore, the `read.xls` function will take on the arguments of `read.csv/.table` as well!
+
+*If you are getting error messages related to perl functionality, you may have to manually specify the location of perl on your computer with the `perl = C:/path_to_perl/.exe` argument. Follow these [instructions](#perl) for help downloading perl and how to locate it on your computer.
+
+Another useful feature of the `read.xls` function is its ability to read files directly from a web path/url rather than having to download them first. This makes sharing and reporting work much more reproducible.
+
+```{r}
+#load the gdata package
+library(gdata)
+
+#get url of the file
+gdata_url <- "http://www.stephansorger.com/content/DataScience_4_Case_Cholera.xls"
+
+#load the data with read.xls
+cholera_data <-  read.xls(xls = gdata_url, perl = "C:/Perl/bin/perl.exe", skip = 4)
+
+str(cholera_data)
+```
+
+Notice the `skip` argument used in the `read.xls` function from above. The data file includes document in the first few rows that are not relevant so we can skip them.
+
+But what if we did not know ahead of time what our document looked like? Or perhaps we only want to import a particular sheet of an excel workbook? We could manually open the document to see what fixes and arguments would need to be made, but there is an even better way to do this using the `xlconnect` package.
+
+##xlconnect
+
+```{r}
+#load the xlconnect library
+library(XLConnect)
+
+#get the path to the file you want to download
+urbanpop <- "https://github.com/jpwalker625/tutorials/blob/master/data/urban_population.xls?raw=true"
+
+#download the file, specify the mode with which to write the file. "wb" = binary
+download.file(url = urbanpop, destfile = "c:/workspace/data/urban_population.xls", mode = "wb")
+
+#Build connection to the workbook
+urbanpop_workbook <- loadWorkbook(filename = "c:/workspace/data/urban_population.xls")
+
+#view the class of the workbook object
+class(urbanpop_workbook)
+
+#view the sheets of the workbook
+getSheets(object = urbanpop_workbook)
+
+#read in the 2nd worksheet
+urbanpop_data <- readWorksheet(object = urbanpop_workbook, sheet = 2)
+
+#read in all worksheets to a list
+all <- lapply(getSheets(urbanpop_workbook), readWorksheet, object = urbanpop_workbook)
+```
+
+## JSON
+
+Java Script Object Notation 
+
+JSON is built on two structures: objects and arrays. 
+`jsonlite` package
+`tidyjson` package
+
+```{r}
+#load jsonlite package
+library(jsonlite)
+
+# Definition of quandl_url
+quandl_url <- "http://www.quandl.com/api/v1/datasets/IWS/INTERNET_INDIA.json?auth_token=i83asDsiWUUyfoypkgMz"
+
+# Import Quandl data: quandl_data
+quandl_data <- fromJSON(quandl_url)
+
+# Print structure of quandl_data
+str(quandl_data)
+```
+
+Practice using jsonlite package to get movie information from OMDB
+
+```{r}
+# Definition of the URLs
+url_sw4 <- "http://www.omdbapi.com/?apikey=ff21610b&i=tt0076759&r=json"
+url_sw3 <- "http://www.omdbapi.com/?apikey=ff21610b&i=tt0121766&r=json"
+
+# Import two URLs with fromJSON(): sw4 and sw3
+sw4 <- fromJSON(url_sw4)
+sw3 <- fromJSON(url_sw3)
+
+# Print out the Title element of both lists
+sw4$Title
+sw3$Title
+
+
+# Is the release year of sw4 later than sw3?
+sw4$Year > sw3$Year
+```
+
+You can also use `toJSON` to make convert an R object into JSON format.
+
+```{r}
+# URL pointing to the .csv file
+url_csv <- "http://s3.amazonaws.com/assets.datacamp.com/production/course_1478/datasets/water.csv"
+
+# Import the .csv file located at url_csv
+water <- read.csv(url_csv, stringsAsFactors = FALSE)
+
+# Convert the data file according to the requirements
+water_json <- toJSON(water)
+
+# Print out water_json
+water_json
+```
+
+The `minimfy` and `prettify` functions are useful for structuring JSON.
+
+```{r}
+# Convert mtcars to a pretty JSON: pretty_json
+pretty_json <- toJSON(mtcars, pretty = TRUE)
+
+
+# Print pretty_json
+pretty_json
+
+#prettify json using the prettify() function
+mtcars_json <- toJSON(mtcars)
+
+#print mtcars_json
+prettify(mtcars_json)
+
+#print in prettify format
+prettify(mtcars_json)
+
+# Minify pretty_json: mini_json
+mini_json <- minify(pretty_json)
+
+# Print mini_json
+mini_json
+```
+
+
+# Connecting to Databases
+
+#The RODBC package is useful for connecting to a database such as Microsoft SQL Server
+
+library(RODBC)
+
+con <- odbcDriverConnect(connection="DRIVER=SQL SERVER; SERVER=sqlwarehouse1.amyris.local; UID=dataout_reader; PWD=dataout_reader; DATABASE=dataout")
+
+
+query <-  sqlQuery(channel = con, query = "SELECT TOP 100* FROM furnace.hts_st4_requests")
+
+
+#### *perl instructions* {#perl}
+
+1) Open the command line and type `where perl` to determine the location of perl on your computer.
+2) If it is not installed, you can download it here: https://www.perl.org/get.html. The downloader will ask you if you you want to add perl to your PATH. Check the box to do so.
+3) Once you have perl installed, go back to the command line and type `path` or `where perl` to find the location of perl.
+4) Finally, assign the path of your perl to the `perl = path to perl` argument. Your code should look something like this:  
+
+> `my_data <- read.xls(xls = "http://example.com/data.xls", perl = "C:/perl/bin/perl.exe")`
