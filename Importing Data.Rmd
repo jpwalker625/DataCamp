@@ -13,7 +13,8 @@ knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 library(tidyverse)
 ```
 
-This tutorial will provide various examples of how to import data into R. In addition to the useful base R functions provided, we will cover various packages helpful for importing data. 
+This tutorial provides various methods on importing data into R. In addition to the useful base R functions provided, we will cover various packages helpful for importing data.
+
 
 The `utils` package has a built in function to download files from the web. It is aptly named `download.file`.
 
@@ -187,6 +188,19 @@ mini_json <- minify(pretty_json)
 # Print mini_json
 mini_json
 ```
+
+## Haven 
+
+`Haven` enables R to read and write various data used by other statistical packages by wrapping the ReadStat C library written by Evan Miller. Haven is part of the tidyverse suite of packages but it must be loaded explicitly. 
+
+* SAS (Staistical Analysis System)  
+    + `read_sas()`
+* STATA
+    + `read_dta()`
+* SPSS  
+    + `read_sav()` 
+    + `read_por()` 
+
 
 
 # Connecting to Databases
