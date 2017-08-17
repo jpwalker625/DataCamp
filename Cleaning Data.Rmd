@@ -1,0 +1,125 @@
+---
+title: "Cleaning Data"
+author: "Joseph Walker"
+date: "August 9, 2017"
+output: html_document
+---
+
+```{r setup, include= TRUE}
+#Define Global Options
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+
+#Load Required Packages
+library(tidyverse)
+library(lubridate)
+library(stringr)
+```
+#Introduction to Cleaning Data in R
+
+Cleaning Data is essential to the data science process. Often, it is the most labor intensive part of being a data scientist.
+
+There are three parts:
+
+* Exploring the raw data
+* Tidying the data
+* Preparing data for analysis
+
+# Exploring Raw Data
+The first part, exploring the raw data is essential for getting a feel of the data your working with and how you will need to tidy it up.
+
+```{r checking the structure of your data}
+#check the class of the dataset
+class(mtcars)
+
+#check the dimensions of the dataset
+dim(mtcars)
+
+#column names of the dataset
+names(mtcars)
+
+#check the structure of the data
+str(mtcars)
+
+#use the dplyr version of str() to view the dataset
+glimpse(mtcars)
+
+#Call a summary of the data
+summary(mtcars)
+
+#view the first few rows of the data
+head(mtcars, n = 10)
+
+#view the last rows of the data
+tail(mtcars, n = 5)
+```
+
+Simple visualizations of the data can be useful
+
+```{r data visualization exploration}
+hist(mtcars$mpg)
+
+plot(x = mtcars$disp, y = mtcars$mpg)
+```
+
+# Tidying the Data
+Principles of tidy data
+
+* Observations as rows 
+* Variables as columns 
+* One type of observation unit per table 
+
+Wide vs. Long using `tidyr`
+
+ are two functions useful for changing a wide table into long, and long to wide, respectively. These functions depend on key value pairings of the data.
+
+`separate` and `unite`
+
+
+Common Symptoms of messy data:
+
+Headers are values, not variable names. Or vice versa. The functions `gather` and `spread` can handle these conversions by turning a dataset froma wide format to long, or long to wide, respectively. These functions depend on j=ky-value pairings. 
+
+Multiple types of observational untis are stored in the same table. To alleviate this, you should create two separate tables that can be linked together with a primary key.
+
+#Preparing Data For Analysis
+
+It is often necessary to perform type conversions on your data before using it. 
+
+To perform date conversions, the `lubridate` package is very handy. Lubridate is a part of the tidyverse but needs to be loaded explicitly.
+
+To deal more efficiently with strings, the `stringr` package is available as part of the tidyverse.
+```{r stringr functions}
+#Trim leading and/or trailing white space
+str_trim("   Trim the leading and trailing white space  ")
+str_trim("     remove just the left side    ", side = "left")
+
+#pad string with value/character
+str_pad('21583', width = 6, side = 'left', pad = 'Y')
+
+#str_detect
+
+#str_replace
+
+#tolower()
+
+#toupper()
+
+```
+
+Missing & Special Values
+
+'Inf' - Infinite
+
+NaN - Not a Number
+
+Use `is.na()` to detect na's in the vector.
+`any(is.na())` to determine if there are any na's in the vector
+
+`complete.cases()` will return whether or not the vector/variable has missing values.
+
+`na.omit()` will remove any na's from the vector/variable.
+
+
+
+
+
