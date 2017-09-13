@@ -1,0 +1,30 @@
+---
+title: "Data Visualization"
+author: "Joseph Walker"
+date: "9/12/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+**Exploratory Visaulizations** help us explain the data.
+
+* Helps you see what is in your data 
+* Level of detail: 
+    + Keep as much detail as possible 
+    + Practical limit: how much can you see and interpret? 
+
+**Explanatory Visualizations** help us share our data with others.  
+
+* Shows others what you’ve found in your data 
+* Requires editorial decisions: 
+    + Highlight the key features you want to emphasize 
+    + Eliminate extraneous details
+    
+    
+    
+```{r}
+
+```
