@@ -1,0 +1,34 @@
+---
+title: "Joining Data in R"
+author: "Joseph Walker"
+date: "September 12, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+Welcome to **Joining Data In R.** This tutorial focuses on how to combine datasets using functions from various R packages including: `base R`, `dplyr`, and `purrr`.
+
+First, let's load the required packages:
+```{r load packages}
+library(Lahman)
+library(tidyverse)
+```
+
+In this tutorial, we will be using the `Lahman` package which contains Sean Lahman's historical baseball database. The database is divided into 24 datasets containing various Major League Baseball statistics. Sean Lahman is a database journalist and author who pioneered the effort to make baseball statistics freely available to the public.
+
+```{r}
+LahmanData
+```
+
+From the `Lahman` package vignette:
+
+> The main form of this database is a relational database in Microsoft Access format. The design follows these general principles: Each player is assigned a unique code (playerID). All of the information in different tables relating to that player is tagged with his playerID. The playerIDs are linked to names and birthdates in the Master table. Similar links exist among other tables via analogous *ID variables.
+
+For ease of reference, let's create a vector of the names of the tables in `LahmanData`
+```{r}
+
+
+```
