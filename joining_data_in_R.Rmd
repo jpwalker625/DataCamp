@@ -6,29 +6,241 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, error = TRUE)
 ```
 
 Welcome to **Joining Data In R.** This tutorial focuses on how to combine datasets using functions from various R packages including: `base R`, `dplyr`, and `purrr`.
 
 First, let's load the required packages:
 ```{r load packages}
-library(Lahman)
 library(tidyverse)
+library(purrr)
 ```
 
-In this tutorial, we will be using the `Lahman` package which contains Sean Lahman's historical baseball database. The database is divided into 24 datasets containing various Major League Baseball statistics. Sean Lahman is a database journalist and author who pioneered the effort to make baseball statistics freely available to the public.
+# Mutating Joins {.tabset .tabset-pills}
+Let's start with the *mutating joins*. These joins combine data sets by matching rows. The rows are matched by specifying a key or set of keys (also known as columns) that contain the same information in both datasets.
+
+The mutating joins are: 
+
+* left_join
+* right_join 
+* inner_join 
+* full_join
 
 ```{r}
-LahmanData
+#Data Sets to be Joined
+band_instruments
+band_members
 ```
 
-From the `Lahman` package vignette:
-
-> The main form of this database is a relational database in Microsoft Access format. The design follows these general principles: Each player is assigned a unique code (playerID). All of the information in different tables relating to that player is tagged with his playerID. The playerIDs are linked to names and birthdates in the Master table. Similar links exist among other tables via analogous *ID variables.
-
-For ease of reference, let's create a vector of the names of the tables in `LahmanData`
+## left_join
+In a left_join, the second data set is joined to the first data set, dropping any rows in the second dataset that do not appear in the first. This is the most common type of join.
 ```{r}
+#left_join
+left_join(x = band_instruments, y = band_members, by = "name")
+```
 
+In this case, `r paste(band_members[1, ])` was dropped because it is not in the `band_instruments` dataset
+
+## right_join
+In contrast, with a right_join the first dataset is joined to the second dataset dropping any rows in the first dataset that do not appear in the second dataset.
+
+```{r}
+#right_join
+right_join(x = band_instruments, y = band_members)
+```
+
+Another feature of the dplyr joins is that the `by = "insert_column_here` argument isn't needed in some cases. If the name of the column being joined is the same in each dataset, the join functions will do this automatically.
+
+## inner_join
+Next is the inner_join. This retains only the rows that appear in both datasets.
+
+```{r}
+#inner_join
+inner_join(x = band_instruments, y = band_members, by = "name")
+```
+
+## full_join
+And finally, the full_join returns all values and rows.
+
+```{r}
+#full_join
+full_join(x = band_instruments, y = band_members)
+```
+
+# Filtering Joins {.tabset .tabset-pills}
+
+The next series of joins are called filtering joins. Filtering joins do not actually join the datasets together. Rather, theyreturn a subset of the datasets just like the `filter` function of the `dplyr` package.
+
+```{r}
+#For reference
+band_members
+band_instruments
+```
+
+## semi_join
+A `semi_join` will return the rows in the first dataset that have a match in the second dataset.
+
+```{r}
+#semi_join
+semi_join(band_instruments, band_members, by = "name")
+```
+ 
+## anti_join 
+And the `anti_join` function will return the rows in the first dataset that do not have a match in the second dataset.
+
+```{r} 
+#anti_join
+anti_join(band_instruments, band_members, by = "name")
+
+#switch the datasets around
+anti_join(band_members, band_instruments, by = "name")
+```
+
+#Set Operations{.tabset .tabset-pills}
+
+And finally, set operations work on datasets that contain the same variables but may different information (the rows of data may differ). Often you may want to combine these datasets or look for differences. Set Operations can help with that.
+
+The set operations are:
+
+* intersect
+* union
+* union_all
+* setdiff
+* set_equal
+
+For the following examples, we can use the mtcars dataset to see how one might apply the set operation functions
+
+```{r}
+#mtcars has 32 rows, each row indicating the information for a different vehicle as specified in the rowname
+glimpse(mtcars)
+
+#make column "model" with the name of the car
+mtcars <- rownames_to_column(mtcars, "model")
+
+#split mtcars into two data frames with overlapping rows
+first <- mtcars[1:20, ]
+second <- mtcars[10:32, ]
+```
+
+##intersect
+
+`Intersect` returns a dataframe with rows that appear in both datasets. 
+
+```{r}
+#intersect: returns the rows that appear in both datasets
+intersect(first, second)
+```
+
+Here's an example of why intersect will not work:
+```{r}
+#intersect
+intersect(band_instruments, band_members)
+```
+
+##union
+
+`Union` returns rows that appear in either or both datasets. It does not duplicate rows. 
+
+```{r}
+#union will gives us the original mtcars dataset but not in the same order. It appends the second dataset below the first.
+union(first, second)
+```
+
+##union_all
+
+`Union_all` will returns the row in either or both datasets, repeating duplicate rows.
+```{r}
+union_all(first, second)
+```
+
+##setdiff
+The `setdiff` function will return rows that appear in the first dataset but not the second dataset. 
+
+```{r}
+#setdiff to show the difference of order
+setdiff(first, second)
+
+setdiff(second, first)
+```
+
+##setequal
+The `setequal` function is useful to check whether datasets contain the same information. It returns a logical, either TRUE or FALSE if the information is the same in the datasets being compared. **It does not check whether the row order is the same though.**
+
+Similarly, the `identical` function will check for equality in the datasets, but identical is more stringent and row order matters!
+```{r}
+#setequal = TRUE
+setequal(mtcars, union(first,second))
+
+#setequal = FALSE
+setequal(first, second)
+setequal(mtcars, union_all(first, second))
+
+#identical
+identical(mtcars, union(second, first))
+
+```
+
+#Binds{.tabset .tabset-pills}
+
+The `bind_rows` and `bind_cols` functions are superior to the `base R` versions because:
+
+* they are faster
+* can take a list of dataframes as input
+* always return a tibble
+* creates a column for each unique column name and distirbutes missing values approrpiately.
+
+##bind_rows
+```{r}
+#crate data frame discography from csv file
+discography <- read_csv("data/jimi_hendrix/discography.csv")
+
+discography
+
+#create list of data frame containing song names and lengths from different albums
+albums <- list(`Are You Experienced` = read_csv("data/jimi_hendrix/jimi1.csv"), `Axis: Bold as Love` = read_csv("data/jimi_hendrix/jimi2.csv"), `Electric Ladyland` = read_csv("data/jimi_hendrix/jimi3.csv"))
+
+albums
+
+#bind_rows of the albums list and create a new column 'albums'
+albums %>% 
+  bind_rows(.id = 'album') %>%
+  left_join(discography, by = 'album')
+```
+
+##bind_cols
+
+#Joining Multiple Datasets
+
+It is possible to join datasets on multiple columns as you will see in the following example. Taking this one step further, it is possible to join columns that have mismatched names by setting them equal to each other.
+
+```{r}
+superheroes <- data_frame(superhero = c("Batman", "Superman", "Spiderman", "Hulk"), first = c("Bruce", "Clark", "Peter", "Bruce"), last = c("Wayne", "Kent", "Parker", "Banner"), powers = c("bat-like", "super-human", "spider-like", "super-strong"))
+
+superheroes
+
+
+occupations <- data_frame(first = c("Bruce", "Clark", "Peter", "Bruce"), surname = c("Wayne", "Kent", "Parker", "Banner"), occupation = c("CEO", "Journalist", "Journalist", "Physicist"))
+
+occupations
+
+origins <- data_frame(first = c("Bruce", "Clark", "Peter", "Bruce"), surname = c("Wayne", "Kent", "Parker", "Banner"), origin = c("DC", "DC", "Marvel", "Marvel"))
+
+origins
+
+#This produces undesirable results
+left_join(superheroes,occupations)
+
+#joining on multiple columns will fix this
+left_join(superheroes, occupations, by = c("first", "last" = "surname"))
+
+```
+
+The `reduce` function from the `purrr` package is useful for joining multiple datasets.
+
+```{r}
+list(superheroes, occupations, origins) %>%
+  reduce(left_join, by = c("first", "last" = "surname")
+  )
 
 ```
