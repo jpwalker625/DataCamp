@@ -22,9 +22,71 @@ knitr::opts_chunk$set(echo = TRUE)
 * Requires editorial decisions: 
     + Highlight the key features you want to emphasize 
     + Eliminate extraneous details
-    
-    
+   
+  par(mfrow = c(rows, columns)) 
+  plot, (data, type = o,l,p,s)  
     
 ```{r}
+names(par())
+# Set up a 2-by-2 plot array
+par(mfrow = c(2,2))
 
+w <- chickwts$weight
+# Plot the chick weights  data as points
+plot(w, type = "p")
+
+# Add the title
+title("points")
+
+# Plot the chick weights with lines
+plot(w, type = "l")
+
+# Add the title
+title("lines")
+
+# Plot the chick weights as lines overlaid with points
+plot(w, type  = "o")
+
+# Add the title
+title("overlaid")
+
+# Plot the chick weights as steps
+plot(w, type = "s")
+
+# Add the title
+title("steps")
 ```
+
+
+
+```{r}
+#load MASS package for the Cars93 dataset
+library(MASS)
+
+#assign datasets to variables
+c1 <- Cars93
+c2 <- mtcars
+
+#compute max_hp
+max_hp <- max(c1$Horsepower, c2$hp)
+
+#compute max_mpg
+max_mpg <- max(c1$MPG.city, c2$mpg)
+
+# Create empty plot with type = "n"               
+plot(max_hp, max_mpg,
+     type = "n", xlim = c(0, max_hp),
+     ylim = c(0, max_mpg), xlab = "Horsepower",
+     ylab = "Miles per gallon")
+
+# Add open circles to plot
+points(y =c2$mpg, x =c2$hp, pch = 1)
+
+# Add solid squares to plot
+points(y = c1$MPG.city, x = c1$Horsepower, pch = 15)
+
+# Add open triangles to plot
+points(y = c1$MPG.highway, x = c1$Horsepower, pch = 2)
+```
+
+
