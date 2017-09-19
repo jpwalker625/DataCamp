@@ -18,7 +18,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 **Explanatory Visualizations** help us share our data with others.  
 
-* Shows others what you’ve found in your data 
+* Shows others what you've found in your data 
 * Requires editorial decisions: 
     + Highlight the key features you want to emphasize 
     + Eliminate extraneous details
@@ -89,4 +89,129 @@ points(y = c1$MPG.city, x = c1$Horsepower, pch = 15)
 points(y = c1$MPG.highway, x = c1$Horsepower, pch = 2)
 ```
 
+Managing Visual Complexity
+
+Too many details can detract from a plot. In addition, more plots is not necessarily more useful.
+
+The `matplot` function allows you to plot multiple columns on an axis but as we will see, too much data can disrupt your plot.
+```{r}
+# Construct the vector keep_vars
+keep_vars <- c("calories", "protein", "fat",
+               "fibre", "carbo", "sugars")
+
+# Use keep_vars to extract the desired subset of UScereal
+df <- UScereal[, keep_vars]
+
+# Set up a two-by-two plot array
+par(mfrow = c(2,2))
+
+# Use matplot() to generate an array of two scatterplots
+matplot(y = UScereal[, c("protein", "fat")], x  = UScereal$calories, xlab = "calories", ylab = "")
+
+# Add a title
+title("Two scatterplots")
+
+# Use matplot() to generate an array of three scatterplots
+matplot(y = UScereal[, c("protein", "fat", "fibre")], x = UScereal$calories, xlab = "calories", ylab = "")
+
+# Add a title
+title(main = "Three scatterplots")
+
+# Use matplot() to generate an array of four scatterplots
+matplot(y = UScereal[, c("protein", "fat", "fibre", "carbo")], x = UScereal$calories, xlab = "calories", ylab = "")
+
+# Add a title
+title(main = "Four scatterplots")
+
+# Use matplot() to generate an array of five scatterplots
+matplot(y = UScereal[, c("protein", "fat", "fibre", "carbo", "sugars")], x = UScereal$calories, xlab = "calories", ylab = "")
+
+# Add a title
+title(main = "Five scatterplots")
+```
+
+Multiple plot arrays
+```{r}
+# Set up a two-by-two plot array
+par(mfrow = c(2,2))
+
+# Plot the raw duration data
+plot(geyser$duration, main = "Raw data")
+
+# Plot the normalized histogram of the duration data
+truehist(geyser$duration, main = "Histogram")
+
+# Plot the density of the duration data
+plot(density(geyser$duration), main = "Density")
+
+# Construct the normal QQ-plot of the duration data (qqPlot comes from the 'car' package)
+car::qqPlot(x = geyser$duration, main = "QQ-plot")
+
+```
+
+Constructing & Displaing Layout Matrices
+
+```{r}
+# Use the matrix function to create a matrix with three rows and two columns
+layoutMatrix <- matrix(
+  c(0, 1,
+    2, 0,
+    0, 3), 
+  byrow = TRUE, 
+  nrow = 3
+)
+
+# Call the layout() function to set up the plot array
+layout(layoutMatrix)
+
+# Show where the three plots will go 
+layout.show(3)
+```
+
+Now we will use a similar layout matrix and apply it to some plots using data from the `whiteside` dataset from the `MASS` package.
+
+```{r}
+# Set up the plot array
+layout(layoutMatrix)
+
+# Construct vectors indexB and indexA
+indexB <- which(whiteside$Insul == "Before")
+indexA <- which(whiteside$Insul == "After")
+
+# Create plot 1 and add title
+plot(whiteside$Temp[indexB], whiteside$Gas[indexB],
+     ylim = c(0,8),
+title("Before data only"))
+
+# Create plot 2 and add title
+plot(whiteside$Temp, whiteside$Gas,
+     ylim = c(0,8),
+title("Complete dataset"))
+
+# Create plot 3 and add title
+plot(whiteside$Temp[indexA], whiteside$Gas[indexA],
+     ylim = c(0,8),
+title("After data only"))
+```
+
+And finally, we can create arrays for different sized plots using the `layout matrix`. The `Boston` dataset from the `MASS` package us used in the following examples.
+
+```{r}
+# Create row1, row2, and layoutVector
+row1 <- c(1,0,0)
+row2 <- c(0,2,2)
+layoutVector <- c(row1, row2, row2)
+
+# Convert layoutVector into layoutMatrix
+layoutMatrix <- matrix(layoutVector, byrow = TRUE, nrow = 3)
+
+# Set up the plot array
+layout(layoutMatrix)
+
+# Plot scatterplot
+plot(Boston$rad, Boston$zn)
+
+# Plot sunflower plot
+sunflowerplot(Boston$rad, Boston$zn)
+```
 
