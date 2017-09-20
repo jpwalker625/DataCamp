@@ -89,7 +89,7 @@ points(y = c1$MPG.city, x = c1$Horsepower, pch = 15)
 points(y = c1$MPG.highway, x = c1$Horsepower, pch = 2)
 ```
 
-Managing Visual Complexity
+#Managing Visual Complexity
 
 Too many details can detract from a plot. In addition, more plots is not necessarily more useful.
 
@@ -130,7 +130,7 @@ matplot(y = UScereal[, c("protein", "fat", "fibre", "carbo", "sugars")], x = USc
 title(main = "Five scatterplots")
 ```
 
-Multiple plot arrays
+# Multiple plot arrays
 ```{r}
 # Set up a two-by-two plot array
 par(mfrow = c(2,2))
@@ -194,7 +194,9 @@ plot(whiteside$Temp[indexA], whiteside$Gas[indexA],
 title("After data only"))
 ```
 
-And finally, we can create arrays for different sized plots using the `layout matrix`. The `Boston` dataset from the `MASS` package us used in the following examples.
+And finally, we can create arrays for different sized plots using the `layout matrix`. 
+
+The `Boston` dataset from the `MASS` package us used in the following examples.
 
 ```{r}
 # Create row1, row2, and layoutVector
@@ -213,5 +215,97 @@ plot(Boston$rad, Boston$zn)
 
 # Plot sunflower plot
 sunflowerplot(Boston$rad, Boston$zn)
+```
+
+#Creating & Saving More Complex Plots
+
+Plots often have Side-effects & return values not displayed in the plot itself, but that can be captured with an assignment statement.
+For example, `barplot()` has the side effect of creating the plot we want, but it also returns a numerical vector with the center positions of each bar in the plot. This value is returned invisibly so we don't normally see it but we can capture it with an assignment statement.
+
+These return values can be especially useful when we want to overlay text on the bars of a horizontal barplot. Then, we capture the return values and use them as the y parameter in a subsequent call to the text() function, allowing us to place the text at whatever x position we want but overlaid in the middle of each horizontal bar. This exercise asks you to construct a horizontal barplot that exploits these possibilities.
+
+```{r}
+# Create a table of Cylinders frequencies
+tbl <- table(Cars93$Cylinders)
+
+tbl
+
+# Generate a horizontal barplot of these frequencies
+mids <- barplot(tbl, horiz = TRUE,
+                col = "transparent")
+
+#mids is now a vector of the midpoints of the barplot we created above.
+mids
+
+# Add names labels with text()
+#text(x = numeric positionon x-axis, y = numeric position on y-axis, labels = vector of labels, )
+text(20, y = mids, names(tbl))
+
+# Add count labels with text()
+text(35, mids, as.numeric(tbl))
+```
+
+
+The scatterplot allows us to see how one numerical variable changes with the values of a second numerical variable. The `symbols()` function allows us to extend scatterplots to show the influence of other variables.
+
+This function is called with the variables x and y that define a scatterplot, along with another argument that specifies one of several possible shapes. Here, you are asked to use the circles argument to create a bubbleplot where each data point is represented by a circle whose radius depends on the third variable specified by the value of this argument.
+
+```{r}
+# Call symbols() to create the default bubbleplot
+symbols(Cars93$Horsepower, Cars93$MPG.city,
+        circles = sqrt(Cars93$Price), inches = 0.1)
+```
+
+#Using Color Effectively
+
+Limitations of color: 
+* Color-blindness
+* Black and white reproductions 
+* Can be overuse and lose usefulness
+
+Illinsky & Steele (Beautiful Visualization) recommend using ideally 6 colors, hopefully no more than 12, and absolutely no more than 20.
+
+This exercise asks you to create a horizontal barplot that shows Iliinsky and Steele's set of recommended 12 colors, in descending order of desirability from the top of the plot to the bottom. Also, the first six "more preferred" colors are displayed with longer bars to visually emphasize their preferred status over the other six.
+
+```{r}
+# Iliinsky and Steele color name vector
+IScolors <- c("red", "green", "yellow", "blue",
+              "black", "white", "pink", "cyan",
+              "gray", "orange", "brown", "purple")
+
+# Create the data for the barplot
+barWidths <- c(rep(2, 6), rep(1, 6))
+
+# Recreate the horizontal barplot with colored bars
+barplot(rev(barWidths), horiz = TRUE,
+        col = rev(IScolors), axes = FALSE, names.arg = rev(IScolors), las = 1)
+```
+
+Using color to enhance a bubbleplot
+
+```{r}
+# Create the `cylinderLevel` variable
+cylinderlevel <- Cars93$Cylinders
+
+
+
+#subset the IScolors vector with the levels of cylinder
+IScolors[cylinderlevel]
+
+# Create the colored bubbleplot
+symbols(Cars93$Horsepower, Cars93$MPG.city, circles = as.numeric(Cars93$Cylinders), inches = 0.2, bg = IScolors[cylinderlevel])
+```
+
+---
+
+```{r}
+# Create a table of Cylinders by Origin
+tbl <- table(Cars93$Cylinders, by = Cars93$Origin)
+
+# Create the default stacked barplot
+barplot(tbl)
+
+# Enhance this plot with color
+barplot(tbl, col = IScolors)
 ```
 
