@@ -1,0 +1,114 @@
+---
+title: "Data Visualization with GGPLOT2"
+author: "Joseph Walker"
+date: "September 25, 2017"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+
+```
+
+#Part 1
+
+Data Visualization combines Statistics and Design to present data in meaningful ways. Good design aids in both the understanding and communication of results. 
+
+**Exploratory Visualizations** are meant to confirm and analyze. They are often data heavy, easy to generate, and intended for a small, specialist audience.
+
+**Explanatory Visualizations** are mean to inform and persuade. They are labor intensive, data specific, and intended for a broader audience such as publications or presentations.
+
+
+GGPLOT2's functionality relies on the grammar of graphics which has 2 principles: 
+* Graphics are distinct layers of grammatical elements 
+* Meaningful plots through aesthetic mapping 
+
+The essential grammatical elements are:
+
+* Data - The dataset being plotted
+* Aesthetics - The scales onto which we map our data
+* Geometries - The visual elements used for our data
+
+Other elements include: 
+
+* Facets 
+* Statistics 
+* Coordinates 
+* Themes 
+
+With GGPLOT2, plots become objects which can be recycled and manipulated by adding on layers and arguments.
+
+Aesthetics vs. Attributes
+
+Aesthetics are Mapped onto the plot using existing data. 
+
+Common aesthetics include: 
+
+* x 
+* y 
+* color 
+* fill 
+* size 
+* alpha 
+* linetype 
+* labels 
+* shape
+
+These aesthetics can also be used as attributes, but it is important to understand the difference between the two. 
+
+```{r}
+#subset/sample the diamonds dataset
+diamonds_sample <- sample_n(diamonds, size = 100)
+
+#Create a ggplot object price vs. carat for the Diamonds Dataset
+p <- ggplot(data = diamonds_sample, mapping = aes(x = carat, y = price))
+
+#plot the object
+p
+```
+
+Notice that the ggplot object is plotted, but there is no geometry applied to the object so we don't see any of the data.
+
+Here we will add one of the most common geometries, `geom_point` to the object to get a scatterplot.
+```{r}
+p + geom_point()
+
+#Here we apply color as an aesthetic.
+p + geom_point(aes(color = clarity))
+
+#We can also add the aesthetic to the orignal ggplot object. It is best practice to keep the aesthetics in the same layer as much as possible. This will allow your plotting code to be clearer and more readable.
+ggplot(data = diamonds_sample, mapping = aes(x = carat, y = price, color = clarity))+
+  geom_point()
+```
+
+As noted above, there are a variety of different aesthetics we can apply to our plotting object. Be careful as the more aesthetics you add, the more complex your plot becomes and this is not necessarily a good thing.
+
+```{r}
+#plot diamonds_sample using multiple aesthetics
+ggplot(diamonds_sample, aes(carat, price, color = clarity, shape = cut, size = color))+
+  geom_point()
+```
+
+Attributes on the other hand, apply to the entire plot object.
+
+```{r}
+p <- ggplot(diamonds_sample, aes(carat, price, color = clarity))
+
+p + geom_point(alpha = 0.6, shape = 18, size = 3)
+```
+
+Attributes override Aesthetic layers as shown in the example below.
+```{r}
+#the color attribute over rides the color = clarity aesthetic
+p + geom_point(alpha = 0.6, shape = 18, size = 3, color = "red")
+```
+
+
+```{r}
+
+
+
+```
+
