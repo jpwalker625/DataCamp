@@ -20,6 +20,7 @@ Data Visualization combines Statistics and Design to present data in meaningful 
 
 **Explanatory Visualizations** are mean to inform and persuade. They are labor intensive, data specific, and intended for a broader audience such as publications or presentations.
 
+## Scatter Plots
 
 GGPLOT2's functionality relies on the grammar of graphics which has 2 principles: 
 * Graphics are distinct layers of grammatical elements 
@@ -57,7 +58,6 @@ Common aesthetics include:
 * shape
 
 These aesthetics can also be used as attributes, but it is important to understand the difference between the two. 
-
 ```{r}
 #subset/sample the diamonds dataset
 diamonds_sample <- sample_n(diamonds, size = 100)
@@ -105,10 +105,114 @@ Attributes override Aesthetic layers as shown in the example below.
 p + geom_point(alpha = 0.6, shape = 18, size = 3, color = "red")
 ```
 
+### Overplotting
 
+Often is this case that you will have to deal with overplotting:
+
+* Large datasets 
+* Imprecise data and so points are not clearly separated on your plot 
+* Interval data (i.e. data appears at fixed values) 
+* Aligned data values on a single axis. 
+
+As we saw earlier, we can adjust the size, shape, and alpha layers to account for this:
 ```{r}
+p <- ggplot(mtcars, aes(wt, mpg, color = factor(cyl)))
 
+#notice we have some overlapping points. We can do better.
+p + geom_point(size = 4)
 
-
+#adjust the shape and alpha
+p + geom_point(size = 4, shape = 1, alpha = 0.6)
 ```
 
+Another solution to overplotting is the `geom_jitter` function. 
+
+```{r}
+p <- ggplot(mtcars, aes(x = cyl, y = wt))
+
+p + geom_point()
+
+# with geom_jitter
+p + geom_jitter()
+```
+
+As shown above, `geom_jitter` fixed the overplotting, but it overcorrected. We can fix this using a variation on the function, calling the `width` argument.
+
+```{r}
+#set the width within the geom_jitter function
+p + geom_jitter(width = 0.1)
+```
+
+And finally, we can pass the `position_jitter()` function to the `position = ` argument within `geom_point()`
+
+```{r}
+p + geom_point(position = position_jitter(0.1))
+```
+
+## Histograms & Bar Plots
+
+**Histograms** are useful plots for visualizing distributions of a dataset and ggplot2 comes prepared with the `geom_histgoram` function. 
+
+The default argument is `stat = 'bin'`, separates the continuous variable into bins so you get a sense of the general distribution of the data. The amount of bins defaults to `binwidth = range/30`.
+
+```{r}
+#plot histogram of the weight variable from the ChickWeight dataset
+p <- ggplot(ChickWeight, aes(weight))
+  
+p + geom_histogram()
+
+#adjust the binwidth
+p + geom_histogram(binwidth = 5)
+```
+
+We can also customize the y-axis. By default, the y-axis displays the count of the dataset, but we can change it to display the density. Displaying the density is useful for showing the proprotional frequency of a bin relative to the whole dataset.
+
+```{r}
+p + geom_histogram(aes(y = ..density..), binwidth = 5, fill = "steelblue")
+```
+
+It could be the case that you want to split your distributions by some factor. To avoid overlap, `geom_histogram` stacks bars at each bin to display the distribution.
+
+```{r}
+#plot the chick weight distribution by diet
+p <- ggplot(ChickWeight, aes(x = weight, fill = Diet))
+
+p + geom_histogram(binwidth = 5)
+```
+
+As you can see, this can be a little difficult to discern. The y-axis count values are a sum of the distribution at that particular bin which can be misleading.  To correct this, we can set `position = "identity"`, which unstacks the bins.
+
+```{r}
+p + geom_histogram(binwidth = 5, position = "identity", alpha = 0.6)
+```
+
+An even better solution is to use `geom_freqpoly`.
+
+```{r}
+#remember to change fill to color 
+ggplot(ChickWeight, aes(weight, color = Diet))+
+  geom_freqpoly(binwidth = 5)
+```
+
+Another common geometry is the `geom_bar` used for bar plots. It has a `position` argument that can take on three arguments:
+
+* stack (the default position)
+* fill
+* dodge
+
+```{r}
+#create barplot with the mtcars dataset
+p <- ggplot(mtcars, aes(factor(cyl), fill = factor(am)))
+
+#bar plot with default position = "stack"
+p+geom_bar()
+
+#position fill
+p + geom_bar(position = "fill")
+
+#position dodge
+p + geom_bar(position = 'dodge')
+
+#overlapping bars
+p + geom_bar(position = position_dodge(width = 0.3), alpha = 0.6)
+```
