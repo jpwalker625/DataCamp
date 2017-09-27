@@ -1,0 +1,54 @@
+---
+title: "Data Visualization with ggplot2 (Part 2)"
+author: "Joseph Walker"
+date: "September 26, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+#load required libraries
+library(tidyverse)
+```
+
+# Part 2
+
+In Part 1, we discussed 3 elements of the grammar of graphics: data, aesthetics, & geometries. We will continue our understnading of data viz by focusing our attention on other important layers: 
+
+* Facets 
+* Statistics 
+* Coordinates 
+* Themes 
+
+## Statistics
+
+Some statistics functions and geom functions can be used synonymously in ggplot2. An example of this is the `geom_bar`, `geom_histogram` and `geom_freqpoly` functions. Under the hood, these functions are using the `stat_bin` function to plot the data. 
+
+```{r}
+#assign plot object
+p <- ggplot(iris, aes(x = Sepal.Width))
+
+#plot with geom_histogram
+p + geom_histogram()
+
+#plot with geom_bar
+p + geom_bar()
+
+#plot with stat_bin
+p + stat_bin()
+```
+
+Similarly, we can apply the smoothing statistics applied by the `stat_smooth` function with `geom_smooth`.
+
+```{r}
+#assign plot object
+p <- ggplot(iris, aes(Petal.Length, Sepal.Length, color = Species))
+
+#scatter plot with least squares modeling for each individual Species, and the dataset as a whole.
+#we can determine whether the confidence interval ribbon appears by setting the 'se' argument.
+p + geom_point() +
+  geom_smooth(method = "lm") +
+  geom_smooth(method = "lm", se = FALSE, aes(group = 1))
+```
+

@@ -1,5 +1,5 @@
 ---
-title: "Data Visualization with GGPLOT2"
+title: "Data Visualization with ggplot2 (Part 1)"
 author: "Joseph Walker"
 date: "September 25, 2017"
 output: html_document
@@ -20,7 +20,7 @@ Data Visualization combines Statistics and Design to present data in meaningful 
 
 **Explanatory Visualizations** are mean to inform and persuade. They are labor intensive, data specific, and intended for a broader audience such as publications or presentations.
 
-## Scatter Plots
+## The Grammar of Graphics
 
 GGPLOT2's functionality relies on the grammar of graphics which has 2 principles: 
 * Graphics are distinct layers of grammatical elements 
@@ -39,11 +39,11 @@ Other elements include:
 * Coordinates 
 * Themes 
 
+### Aesthetics 
+
 With GGPLOT2, plots become objects which can be recycled and manipulated by adding on layers and arguments.
 
-Aesthetics vs. Attributes
-
-Aesthetics are Mapped onto the plot using existing data. 
+Aesthetics are mapped onto the plot using existing data. 
 
 Common aesthetics include: 
 
@@ -57,7 +57,6 @@ Common aesthetics include:
 * labels 
 * shape
 
-These aesthetics can also be used as attributes, but it is important to understand the difference between the two. 
 ```{r}
 #subset/sample the diamonds dataset
 diamonds_sample <- sample_n(diamonds, size = 100)
@@ -91,7 +90,8 @@ ggplot(diamonds_sample, aes(carat, price, color = clarity, shape = cut, size = c
   geom_point()
 ```
 
-Attributes on the other hand, apply to the entire plot object.
+### Attributes
+The aesthetic layers can be applied as **attributes**. It is important to know the difference between the two. Where aesthetics are mapped to specifici data points on the plot based on the variables, attributes are applied to the entire plot object. 
 
 ```{r}
 p <- ggplot(diamonds_sample, aes(carat, price, color = clarity))
@@ -99,7 +99,7 @@ p <- ggplot(diamonds_sample, aes(carat, price, color = clarity))
 p + geom_point(alpha = 0.6, shape = 18, size = 3)
 ```
 
-Attributes override Aesthetic layers as shown in the example below.
+Attributes override aesthetic layers as shown in the example below.
 ```{r}
 #the color attribute over rides the color = clarity aesthetic
 p + geom_point(alpha = 0.6, shape = 18, size = 3, color = "red")
@@ -121,8 +121,8 @@ p <- ggplot(mtcars, aes(wt, mpg, color = factor(cyl)))
 #notice we have some overlapping points. We can do better.
 p + geom_point(size = 4)
 
-#adjust the shape and alpha
-p + geom_point(size = 4, shape = 1, alpha = 0.6)
+#adjust the shape
+p + geom_point(size = 4, shape = 1)
 ```
 
 Another solution to overplotting is the `geom_jitter` function. 
@@ -149,7 +149,11 @@ And finally, we can pass the `position_jitter()` function to the `position = ` a
 p + geom_point(position = position_jitter(0.1))
 ```
 
-## Histograms & Bar Plots
+## Geometries
+
+In the previous examples, we already saw one of the most common types of geometries used for plotting- points used for scatterplots - which use the `geom_point()` or `geom_jitter()` functions or arguments. 
+
+Bars are another common geometry when it comes to data visualization.
 
 **Histograms** are useful plots for visualizing distributions of a dataset and ggplot2 comes prepared with the `geom_histgoram` function. 
 
@@ -194,7 +198,7 @@ ggplot(ChickWeight, aes(weight, color = Diet))+
   geom_freqpoly(binwidth = 5)
 ```
 
-Another common geometry is the `geom_bar` used for bar plots. It has a `position` argument that can take on three arguments:
+Another use of bars is the `geom_bar` used for bar plots. It has a `position` argument that can take on three arguments:
 
 * stack (the default position)
 * fill
@@ -202,7 +206,7 @@ Another common geometry is the `geom_bar` used for bar plots. It has a `position
 
 ```{r}
 #create barplot with the mtcars dataset
-p <- ggplot(mtcars, aes(factor(cyl), fill = factor(am)))
+p <- ggplot(mtcars, aes(x = factor(cyl), fill = factor(am)))
 
 #bar plot with default position = "stack"
 p+geom_bar()
@@ -216,3 +220,83 @@ p + geom_bar(position = 'dodge')
 #overlapping bars
 p + geom_bar(position = position_dodge(width = 0.3), alpha = 0.6)
 ```
+
+It is possible to use both x and y as aesthetics with `geom_bar()` by using the `stat = 'identity` argument.
+
+Notice the error in the first example.
+```{r, error=TRUE}
+#create new variable avg_mpg which calculates the average mpg by cyl and am. assign to ggplot object.
+p <- mtcars %>%
+  group_by(cyl, am) %>%
+  summarise(avg_mpg = mean(mpg)) %>%
+ggplot(aes(x = factor(cyl),y = avg_mpg, fill = factor(am)))
+
+#error message due to y aesthetic 
+p + geom_bar()
+
+#use stat = 'identity' to create bar plot of the avg_mpg for each cyl, by am.
+p + geom_bar(stat = 'identity', position = "dodge")
+```
+
+Finally, we'll have a look at line plots using the `geom_line` function. 
+
+Line plots are useful for time-series analysis. We'll take a look at some examples using the `economics` dataset included in the `ggplot2` package.
+
+```{r}
+#have a look at the economics dataset
+str(economics)
+
+p <- ggplot(economics, aes(x = date, y = unemploy))
+
+p + geom_line()
+
+#create df recess of recession dates    
+recess <- data.frame(begin = as.Date(c('1969-12-01', '1973-11-01', '1980-01-01', '1981-07-01', '1990-07-01', '2001-03-01')),
+                     end = as.Date(c('1970-11-01', '1975-03-01', '1980-07-01', '1982-11-01', '1991-03-01', '2001-11-01')))
+
+
+#plot the periods of recession. 
+#Note the inherit.aes = FALSE argument
+ggplot(economics, aes(x = date, y = unemploy)) + 
+  geom_line() +
+  geom_rect(data = recess, aes(xmin = begin, xmax = end, ymin = -Inf, ymax = Inf), fill = "red", alpha = 0.2, inherit.aes = FALSE)
+  
+
+```
+
+And just like other geometries, `geom_line` can take on various aesthetics/attributes. Let's explore these with the `txhousing` dataset from the `ggplot2` package.
+
+`geom_path` can also be used in substitute of `geom_line`
+
+```{r}
+#view the dataset
+str(txhousing)
+
+#manipulate the dataset
+txhousing$city <-factor(txhousing$city)
+
+#how many cities in the dataset?
+levels(txhousing$city)
+
+#subset the data for only a few cities
+txh <- txhousing %>% filter(city %in% c("Austin", "El Paso", "Houston", "San Antonio", "Dallas", "Corpus Christi", "Texarkana", "Odessa", "Fort Worth", "Waco"))
+
+#create summary statistics using txh dataset
+txh_summary <- txh %>% 
+  group_by(year, city) %>%
+summarise(avg_sales_per_year = mean(sales))
+
+#create plot object using txh_summary dataset
+p <- ggplot(txh_summary, aes(x = year, y = avg_sales_per_year, color = city))
+
+#line plot
+p + geom_line()
+  
+#adjust the attributes of the line plot
+p + geom_line(lineend = "round", alpha = 0.6, size = 2)
+
+#more attributes!
+p + geom_line(linetype = 5, arrow = arrow(angle = 20, ends = "last", type = "closed"))
+```
+
+
