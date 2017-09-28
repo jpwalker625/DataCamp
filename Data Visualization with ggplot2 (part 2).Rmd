@@ -172,20 +172,85 @@ p + stat_sum() +
 
 ##Stat Summary
 
-Stat_summary can be used to perform summary statistics in conjunction with various ggplot2 and hmisc functions. You can even create custom functions to generate stats. 
+Stat_summary can be used to perform summary statistics in conjunction with various ggplot2 and hmisc functions. 
 
-The only caveat is that the variable names need to match the agrguments of the geometry being called.
+For example, the `mean_cl_normal` function can be used to generate the mean and the lower and upper confidence limits on a variable. 
+
+```{r}
+# examine the Rabbit dataset
+str(Rabbit)
+
+#create plot object BPchange vs. Dose using Rabbit dataset
+p <- ggplot(Rabbit, aes(x = factor(Dose), y = BPchange, color = Treatment))
+
+#take a look at the plot
+p + geom_point(position = position_jitter(0.2))
+
+#use stat_summary function to generate mean for each BPchange per Dose
+p +
+  stat_summary(geom = 'point', fun.y = mean)
+
+#examine mean_cl_normal function
+mean_cl_normal(Rabbit$BPchange)
+
+#assign position dodge function
+posn.d <- position_dodge(width = 0.5)
+
+#use stat_summary to generate confidence intervals of the mean
+p + stat_summary(geom = 'errorbar', position = posn.d, fun.data = mean_cl_normal, size = 1) +
+  stat_summary(geom = 'point', position = posn.d, fun.y = mean, shape = "X", size = 3)
+
+
+
+```
+
+You can even create custom functions to generate stats. The only caveat is that the variable names need to match the agrguments of the geometry being called.
+
+```{r}
+#create min and max range function
+range_function <- function(x){
+  data.frame(ymin = min(x),
+             ymax = max(x))
+}
+
+#demonstrate range function
+range_function(Rabbit$BPchange)
+
+#create median interquartile range function (calculates the median, 25% and 75% quartiles)
+med_IQR <- function(x){
+  data.frame( y = median(x),
+              ymin = quantile(x)[2],
+              ymax = quantile(x)[4])
+}
+
+#demonstarte quantile and med_IQR function
+quantile(Rabbit$BPchange)
+
+med_IQR(Rabbit$BPchange)
+
+#use functions in stat_summary to plot the data
+#redundancy of Treatment variable is necessary to adjust the attributes of the stat_summary functions 
+p <- ggplot(Rabbit, aes(x = factor(Dose), y = BPchange, color = Treatment, group = Treatment, fill = Treatment))
+
+p + 
+  stat_summary(geom = 'linerange', fun.data = med_IQR, size = 2, position = posn.d) +
+  stat_summary(geom = 'linerange', fun.data = range_function, size = 1.5, alpha = 0.5, position = posn.d)+
+  stat_summary(geom = 'point', fun.y = median, shape = "X", color = 'black', size = 2, position = posn.d)
+
+```
 
 
 ## Coordinates & Facets
 
 scales - set limits/breaks
 
+
+
 coord_cartesian - zooms
 
 
 ```{r}
-?zoo
+
 ```
 
 As a rule of thumb, it is good practice to use a 1:1 aspect ratio when your axes show the same scales.
@@ -194,14 +259,22 @@ The following dataset uses the `crabs` dataset from the `MASS` package. CW refer
 
 ```{r}
 #create plot object using the crabs dataset from the MASS package
-p <- ggplot(crabs, aes(x = CW  ,y = RW, color = factor(sp), shape = factor(sex))) + 
-  geom_point() + stat_smooth(method = "lm")+
-  scale_shape_manual("sex", values = c(4, 10))
-
+p <- ggplot(crabs, aes(x = CW  ,y = RW, color = factor(sp), label = factor(sp), linetype = sex)) + 
+  geom_text() + stat_smooth(method = "lm") +
+  scale_color_manual("species", values = c("steelblue3","darkorange"))
 #plot with default aspect ratio
 p
 
 #plot with fixed 1:1 aspect ratio
 p + coord_equal()
+```
+
+The `coord_polar` function converts planar x-y cartesian plots into polar coordinates. This can be useful for making pie charts. In general, it is best practice to avoid pie charts. Other plots can capture the same information in much more meaningful ways. 
+
+```{r}
+p <- ggplot(diamonds, aes(x = 1, fill = clarity))+
+  geom_bar(width = 2)
+
+p + coord_polar(theta = 'y')
 ```
 
