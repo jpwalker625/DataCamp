@@ -145,9 +145,11 @@ Even though we made year a factor, time is really a continuous variable and so w
 p <- ggplot(txhousing, aes(x = listings, y = sales, color = year, group = factor(year)))
 
 #Plot point and quantile models for the median quantile. Modify the color scheme.
+colors <- RColorBrewer::brewer.pal(11, 'RdYlBu')
+
 p + geom_point(color = "black", size = .75) +
-  stat_quantile(alpha = 0.75, size = 2, quantiles = 0.5)+
-  scale_color_gradientn(colours = pals::brewer.rdylbu(15))
+  stat_quantile(alpha = 0.75, size = 2, quantiles = 0.5) +
+  scale_color_gradientn(colours = colors)
 ```
 
 The `stat_sum` function is useful for calculating the counts for each group in a dataset. 
@@ -242,11 +244,32 @@ p +
 
 ## Coordinates & Facets
 
-scales - set limits/breaks
+You can adjust the scales in various ways. There is a series of function beginning with `scale` that allow you to set the breaks and limits, among other arguments. There are also `coordinate` functions which allow you to manipulate the scales as well. It is important to understand the consequences of the functions as the can lead to different plotting results.
 
+For instance, you can zoom in on a section of a plot using the `scale_x_continuous` function, but this may cut off portions of your plot as in the example below.
 
+```{r}
+#create plot object using iris dataset
+p <- ggplot(iris, aes(x = Sepal.Length, y = Sepal.Width, color = Species)) +
+  geom_point() +
+  geom_smooth()
 
-coord_cartesian - zooms
+#view plot
+p
+
+#zoom in using scale function
+p + scale_x_continuous(limits = c(3.5, 5.5))
+```
+
+In the plot above, the loess smoothing for the `virginica` species does not appear because only one data point exists due to the limits we set.
+
+What we really want is to get a zoomed in snapshot of this section of the plot as it is. For this we can use the `coord_cartesian` function to adjust the plot without losing the actual information.
+
+```{r}
+#apply coord_cartesian to plot object
+p + coord_cartesian(xlim = c(3.5,5.5))
+```
+
 
 
 ```{r}
