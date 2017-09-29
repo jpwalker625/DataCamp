@@ -11,6 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 #load required libraries
 library(tidyverse)
 library(MASS) #for datasets
+library(forcats)
 ```
 
 # Part 2
@@ -270,25 +271,9 @@ What we really want is to get a zoomed in snapshot of this section of the plot a
 p + coord_cartesian(xlim = c(3.5,5.5))
 ```
 
-
-
-```{r}
-
-```
-
 As a rule of thumb, it is good practice to use a 1:1 aspect ratio when your axes show the same scales.
 
-The following dataset uses the `crabs` dataset from the `MASS` package. CW refers to carpace width (mm) and RW refers to rear width (mm). The carpace is the upper section of the shell of the crab.
-
 ```{r}
-#create plot object using the crabs dataset from the MASS package
-p <- ggplot(crabs, aes(x = CW  ,y = RW, color = factor(sp), label = factor(sp), linetype = sex)) + 
-  geom_text() + stat_smooth(method = "lm") +
-  scale_color_manual("species", values = c("steelblue3","darkorange"))
-#plot with default aspect ratio
-p
-
-#plot with fixed 1:1 aspect ratio
 p + coord_equal()
 ```
 
@@ -299,5 +284,94 @@ p <- ggplot(diamonds, aes(x = 1, fill = clarity))+
   geom_bar(width = 2)
 
 p + coord_polar(theta = 'y')
+```
+
+## Facets
+
+Facets split up the overall data according to the levels of the categorical variable specified. Faceting is based on the concept of small multiples (Edward Tufte) in which we take a large complex plot and split it up into smaller plots to be able to compare more easily.
+
+Faceting take a formula argument where rows are specified on the left of the tilde (~) and columns are specified on the right of the tilde (~).
+
+The `crabs` data set comes from the `MASS` package. The RW refers to measurement of rear width (mm) and the CW refers to the measurement of carpace width (mm), or the upper segement of the crab. 
+```{r}
+#examine the crabs dataset
+str(crabs)
+#create plot object using crabs dataset
+mycol <- c(pals::brewer.blues(4)[c(3,4)],pals::brewer.oranges(4)[c(3,4)])
+
+p <- ggplot(crabs, aes(x = CW, y = RW, color = interaction(sex, sp))) +
+  geom_point() +
+  scale_colour_manual("Sex.Species", values = mycol) +
+  coord_equal()
+
+#view plot
+p
+
+#facet status by rows
+p + facet_grid(sex~.)
+
+
+# facet species by column
+p + facet_grid(~sp)
+
+#facet both sex and species, add smoothing line, adjust the aspect ratio
+p + facet_grid(sex~ sp) +
+  geom_line(stat = 'smooth', method = 'lm', size = 1.2, alpha = 0.4)  +
+  coord_equal()
+```
+
+Sometimes it may be necessary to adjust the x and/or y axis scales in conjunction with facets. 
+This could be due to redundancy of factors appearing in plots where there is no data for that particular factor. Here's an example using the  
+`UScereal` dataset from the `MASS` package.
+
+```{r }
+#make rownames a column
+UScereal <- rownames_to_column(UScereal, 'cereal')
+
+#make cereal variable a factor
+UScereal$cereal <- as_factor(UScereal$cereal)
+
+#examine the UScereal dataset
+glimpse(UScereal)
+
+#create plot object using UScereal dataset
+p <- ggplot(UScereal, aes(x = calories, y = cereal)) +
+  geom_point()
+
+#examine plot
+p
+
+#facet plot by manufacturer
+p +facet_grid(mfr ~.)
+
+```
+
+As you can see the plot above is unreadable. Let's fix this with by calling some arguments to the `facet_grid` function. 
+We can also adjust the ranking of the cereals using the `forcats` package. Right now they are alphabetical but it would be more useful to rank the cereals in order of the amount of calories.
+
+```{r fig.height= 8, fig.width= 10, fig.align='center'}
+#rank cereals based on calorie amount
+my_breaks <- seq(from = min(UScereal$calories), to = max(UScereal$calories), by = 25)
+
+ggplot(UScereal, aes(x = calories, y = fct_reorder(f = cereal, x = calories, .desc = T), color = vitamins))+
+  geom_point() + 
+  facet_grid(mfr~., scales = 'free_y', space = 'free_y') +
+  scale_x_continuous(breaks = my_breaks) +
+  theme(axis.text.y = element_text(size = 8))
+
+```
+
+## Themes
+
+In the plot above, you may have noticed the `theme` argument in which the y axis text size was modified. The theme function can modify many non data elements of the plot. These elements can be classified into three groups: 
+
+* text - titles, axis labels, and legend or strip text.
+* line - major and minor grid lines within the plot panel, as well as axis ticks and lines.
+* rectangle - backgrounds of the legend, panel (main plot area), and strip (facets) area.
+
+Each argument takes on a sub-argument `element_[text, rectangle, line, blank]` which controls such features as the family (font), face, color, size, fill, angle, etc...
+
+```{r}
+
 ```
 
