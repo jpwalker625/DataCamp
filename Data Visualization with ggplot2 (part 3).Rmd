@@ -1,0 +1,105 @@
+---
+title: "Data Visualization with GGPLOT2 (Part 3)"
+author: "Joseph Walker"
+date: "October 3, 2017"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+#load required libraries
+library(tidyverse)
+library(ggplot2movies) #for datasets
+library(forcats)
+```
+
+# Part 3
+
+In **part 1** of this series, we explored the fundamentals of `ggplot2`. We learned about the **grammar of graphics** beginning with **data, aesthetics, and geometries.** 
+
+In **part 2**, we extended our understanding of data visaluzation by learning about additional graphical elements including: **statistics, coordinates, facets, and themes.** We even learned some best practices along the way. 
+
+In this final chapter, we will explore plots intended for a specialty audience. We will also learn about plots for specific data types such as **ternary plots, networks and maps.**
+
+
+## Statistical Plots for an Academic Audience
+
+There are two common types of plots presented to an academic audience: Box plots and Density plots.
+
+
+Box plots were first described by John Tukey in 1977 in his classic text, 'Exploratory Data Analysis'. The Box Plot gives us what Tukey describes as the 5 number summary:
+
+* minimum
+* 1st quartile 
+* 2nd quartile (the median)
+* 3rd quartile
+* maximum
+
+This is advantageous over using the mean and standard deviation for data sets that may not be normally distributed and prone to extreme outliers. 
+
+The inner quartile range is the difference between the 3rd and 1st quartiles, or what we commonly see as the box in a box plot.
+
+The following examples use the `movies` dataset from the `ggplot2movies` package.
+
+```{r}
+str(movies)
+
+#sample the movies dataset
+movie_sample <- movies[sample(nrow(movies), 10000), ]
+
+#factor the ratings variable and round to the nearest whole number
+movie_sample$rating <- factor(round(movie_sample$rating))
+
+#create a boxplot object
+p <- ggplot(movie_sample, aes(x = rating, y = votes, group = rating)) +
+  geom_point() +
+  geom_boxplot() +
+  stat_summary(fun.data = "mean_cl_normal",
+               geom = "crossbar",
+               width = 0.2,
+               col = "red")
+
+#boxplot
+p
+```
+
+There is a large number of votes for rating. We will need to make some transformations on the data. Be careful as the tranformation will occur differently depending on how you call your stat functions and arguments.
+
+```{r}
+#transformation happens before statistics are calculated
+p + scale_y_log10()  
+
+#transformation happens after the statistics are calculated
+p + coord_trans(y = "log10")
+```
+
+It is possible to cut up continuous variables into ordinal variables using the following functions which `cut` the data.
+  
+`cut_interval(x, n)` makes n groups from vector x with equal range.  
+`cut_number(x, n)` makes n groups from vector x with (approximately) equal numbers of observations.  
+`cut_width(x, width)` makes groups of width width from vector x.  
+
+```{r}
+#create plot object from movies sample dataset
+ p <- ggplot(movie_sample, aes(x  =  year, y = budget)) + scale_y_log10(labels = scales::dollar)
+
+#examine the plot
+p + geom_point()
+
+#use cut_interval to divide year into  sections with equal range
+#every 25 years or so
+p + geom_boxplot(aes(group = cut_interval(year, n = 5)))
+
+#use cut_number function to divide year into groups with approximately equal number of observations
+#reveals that we do not have budget records for the early part of the 20th century
+p + geom_boxplot(aes(group = cut_number(year, n = 5)))
+
+#use cut_width to make group of specified width
+#i.e. decades
+p + geom_boxplot(aes(group = cut_width(year, width = 10)))
+
+```
+
+
