@@ -18,9 +18,9 @@ library(forcats)
 
 In Part 1, we discussed 3 elements of the grammar of graphics: data, aesthetics, & geometries. We will continue our understnading of data viz by focusing our attention on other important layers: 
 
-* Facets 
 * Statistics 
-* Coordinates 
+* Coordinates
+* Facets 
 * Themes 
 
 ## Statistics
@@ -82,7 +82,6 @@ p +
   stat_smooth(aes(group = 1), method = "loess", se = F, col = "black")
 
 ```
-
 
 In the plot above, the overall model is not included in the legend even though we applied the attribute `color = "black` to it. We can fix this by adding the color as an aesthetic, but we lose our control over the color.
 

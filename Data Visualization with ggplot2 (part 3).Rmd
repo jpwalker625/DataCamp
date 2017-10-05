@@ -13,6 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(ggplot2movies) #for datasets
 library(forcats)
+library(reshape2)
 ```
 
 # Part 3
@@ -28,6 +29,7 @@ In this final chapter, we will explore plots intended for a specialty audience. 
 
 There are two common types of plots presented to an academic audience: Box plots and Density plots.
 
+###Box Plots
 
 Box plots were first described by John Tukey in 1977 in his classic text, 'Exploratory Data Analysis'. The Box Plot gives us what Tukey describes as the 5 number summary:
 
@@ -102,4 +104,23 @@ p + geom_boxplot(aes(group = cut_width(year, width = 10)))
 
 ```
 
+### Density Plots
 
+The Kernel Density Estimate (KDE) is defined as:
+
+> A sum of 'bumps' placed at the observations. The kernel function determines the shape of the bumps while the window width, h, determines their width. 
+
+The KDE plots a normal distribution for each value in the data. These are known as the bumps. Let's visualize this concept.
+
+There are three parameters that you may be tempted to adjust in a density plot:
+
+bw - the smoothing bandwidth to be used, see ?density for details
+adjust - adjustment of the bandwidth, see density for details
+kernel - kernel used for density estimation, defined as
+"g" = gaussian
+"r" = rectangular
+"t" = triangular
+"e" = epanechnikov
+"b" = biweight
+"c" = cosine
+"o" = optcosine
