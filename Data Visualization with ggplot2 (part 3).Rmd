@@ -10,10 +10,14 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 
 #load required libraries
-library(tidyverse)
-library(ggplot2movies) #for datasets
 library(forcats)
+library(geomnet)
+library(ggfortify)
+library(ggplot2movies) #for datasets
+library(ggtern)
+library(MASS)
 library(reshape2)
+library(tidyverse)
 ```
 
 # Part 3
@@ -47,6 +51,15 @@ The following examples use the `movies` dataset from the `ggplot2movies` package
 
 ```{r}
 str(movies)
+
+#gather the movie genre into one column
+movies <- movies %>% gather(key = 'genre', value = 'value', -c(1:17))
+
+#convert mpaa to factor
+movies$mpaa <- as_factor(movies$mpaa)
+
+#relabel movies not rated with 'N/A'
+movies$mpaa <- fct_recode(movies$mpaa, 'N/A' = "")
 
 #sample the movies dataset
 movie_sample <- movies[sample(nrow(movies), 10000), ]
@@ -85,7 +98,7 @@ It is possible to cut up continuous variables into ordinal variables using the f
 
 ```{r}
 #create plot object from movies sample dataset
- p <- ggplot(movie_sample, aes(x  =  year, y = budget)) + scale_y_log10(labels = scales::dollar)
+p <- ggplot(movie_sample, aes(x = year, y = budget)) + scale_y_log10(labels = scales::dollar)
 
 #examine the plot
 p + geom_point()
@@ -104,13 +117,43 @@ p + geom_boxplot(aes(group = cut_width(year, width = 10)))
 
 ```
 
+One drawback of the box plot visualization is that you don't have any indication of the sample size for each group. One way of showing this variation is to use the `varwidth` argument.
+
+```{r}
+#create plot object using movie_sample dataset
+p <- ggplot(movie_sample, aes(x = mpaa, y= budget)) + scale_y_log10(labels = scales::dollar)
+
+#view plot object with boxplot and adjust the widths of the boxes based on the sample size
+p + geom_boxplot(varwidth = T)
+
+
+```
+And just so we can confirm this argument is doing what we expect it to, we can check the math manually.
+```{r}
+movie_sample %>%
+  group_by(mpaa) %>%
+  summarize(count = n()) %>%
+  knitr::kable(align = 'c')
+```
+
+
 ### Density Plots
 
-The Kernel Density Estimate (KDE) is defined as:
+Theoretical density plots use the probability density function (PDF) to plot the distribution of univariate data. You have certainly seen these types of plots before. They include: normal, t, chi-squared, and F distributions. 
+
+Emprical density plots use real data using the Kernal Density Estimate.
+
+The KDE is defined as:
 
 > A sum of 'bumps' placed at the observations. The kernel function determines the shape of the bumps while the window width, h, determines their width. 
 
-The KDE plots a normal distribution for each value in the data. These are known as the bumps. Let's visualize this concept.
+The KDE calculates a normal distribution for each value in the data. These are known as the bumps.
+
+To obtain the true density curve, we simply add up all the y-values for each bump along our x-axis.
+
+```{r}
+
+```
 
 There are three parameters that you may be tempted to adjust in a density plot:
 
@@ -124,3 +167,185 @@ kernel - kernel used for density estimation, defined as
 "b" = biweight
 "c" = cosine
 "o" = optcosine
+
+
+## Plots for Specific Data Types
+
+### Scatter Plot Matrices
+
+How do you define largenesss of a data set? Many observations? Many variables? A combination of both?
+
+Base R provides a quick and dirty function, `pairs()` that will output a scatterplot matrix, or SPLOM. This function will only work for continuous variables.
+
+```{r}
+pairs(iris[1:4])
+```
+
+This can also be done in ggplot2
+
+```{r}
+cor_list <- function(x) {
+  L <- M <- cor(x)
+  
+  M[lower.tri(M, diag = TRUE)] <- NA
+  M <- melt(M)
+  names(M)[3] <- "points"
+  
+  L[upper.tri(L, diag = TRUE)] <- NA
+  L <- melt(L)
+  names(L)[3] <- "labels"
+  
+  merge(M, L)
+}
+
+# Calculate xx with cor_list
+xx <- iris %>%
+  group_by(Species) %>%
+  do(cor_list(.[1:4])) 
+
+# Finish the plot
+ggplot(xx, aes(x = Var1, y = Var2)) +
+  geom_point(aes(col = points, size = abs(points)), shape = 16) +
+  geom_text(aes(col = labels,  size = abs(labels), label = round(labels, 2))) +
+  scale_size(range = c(0, 6)) +
+  scale_color_gradient2("r", limits = c(-1, 1)) +
+  scale_y_discrete("", limits = rev(levels(xx$Var1))) +
+  scale_x_discrete("") +
+  guides(size = FALSE) +
+  geom_abline(slope = -1, intercept = nlevels(xx$Var1) + 1) +
+  coord_fixed() +
+  facet_grid(. ~ Species) +
+  theme(axis.text.y = element_text(angle = 45, hjust = 1),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        strip.background = element_blank()) 
+```
+
+### Ternary Plot
+
+A **Ternary plot**, also known as a triangle plot, can be used for compositional trivariate data. This means that the variables add up to 100%. 
+
+You could visualize this type of data with a stacked bar plot, but the ternary plot is better suited for comparing the different compositions.
+
+The following example uses the `USDA` data set, providing textural classification data of land samples.
+```{r}
+#load dataset from the ggtern package
+data("USDA")
+
+#examine the USDA data set
+str(USDA)
+
+# create ID column
+USDA$ID <- row.names(USDA)
+
+#tidy USDA to long format
+USDA_long <- gather(USDA, key, value, -c(Label, ID))
+
+#create stacked bar plot to depict data
+ggplot(USDA_long, aes(x = ID, y = value, fill = key))+
+  geom_col() +
+  coord_flip()
+```
+
+This is a an acceptable plot to represent the composition of soil for each sample. But suppose we wanted to use a ternary plot to visaulize this.
+
+The ternary plot works like this:
+
+```{r}
+DATA <- data.frame(x = c(1,0,0),
+                   y = c(0,1,0),
+                   z = c(0,0,1),
+                   xend = c(0,.5,.5),
+                   yend = c(.5,0,.5),
+                   zend = c(.5,.5,0),
+                   Series = c("yz","xz","xy"))
+ggtern(data=DATA,aes(x,y,z,xend=xend,yend=yend,zend=zend)) + 
+  geom_segment(aes(color=Series),size=1) +
+  scale_color_manual(values=c("darkgreen","darkblue","darkred")) +
+  theme_bw() + theme_nogrid() + 
+  theme(legend.position=c(0,1),legend.justification=c(0,1)) + 
+  labs(title = "Sample Midpoint Segments")
+```
+
+And with the USDA soil dataset,
+
+```{r}
+#create ternary diagram plot object
+p <- ggtern(USDA, aes(x = Sand, y = Silt, z = Clay))
+
+#plot points on ternary plot
+p + geom_point() 
+```
+
+The `ggtern` package is compatible with `ggplot2` functionality to create ternary plots.
+
+As we saw in previous examples, we can combine 2d density plots and other types of visualizations with the ternary plot.
+
+```{r}
+p +
+  stat_density_tern(geom = 'polygon', aes(fill = ..level.., alpha = ..level..))+
+  guides(alpha = F)
+```
+
+### Network Plot
+
+Visualizing relationships between factors in a variable.
+
+For this, we will need the `geomnet` package. 
+
+The following examples use the `madmen` dataset from the geomnet library.
+
+```{r}
+str(madmen)
+
+#merge the edges and vertices datasets
+mmnet <- full_join(madmen$edges, madmen$vertices, by = c('Name1' = 'label'))
+
+
+#plot the relationship
+ggplot(mmnet, aes(from_id = Name1, to_id = Name2, col = Gender )) +
+  geom_net(labelon = T, 
+           size = 6, 
+           fontsize = 3, 
+           labelcolour = 'black', 
+           linewidth = 1,
+           directed = T) +
+  theme_void() +
+  xlim(c(-.5, 1.05))
+
+```
+
+
+### Diagnostic Plots
+
+Can be used to assess how well the fit of a model is. The base R function `plot` will display 4 plots based on the model you use in your call to the function. 
+
+Here's an examples using the `trees` dataset from the `stats` package (default package loaded on startup).
+
+```{r}
+#examine the trees dataset
+str(trees)
+
+#create a linear model object
+res <- lm(Volume ~ Girth, data = trees)
+
+#display diagnostic plots of the model
+plot(res)
+
+```
+
+We can achieve similar results in ggplot2 using the `ggfortify` package. This package converts funcitons between the base R plot `graphics` and `ggplot2` using the `grid` graphics.
+
+```{r}
+autoplot(res, ncol = 2)
+```
+
+Autoplot works with time series as well!
+
+```{r}
+#examine the EUStockMarkets timeseires dataset
+str(EuStockMarkets)
+
+autoplot(datasets::EuStockMarkets)
+
+```
+
