@@ -61,8 +61,11 @@ movies$mpaa <- as_factor(movies$mpaa)
 #relabel movies not rated with 'N/A'
 movies$mpaa <- fct_recode(movies$mpaa, 'N/A' = "")
 
+#set seed for reprducibility
+set.seed(123)
+
 #sample the movies dataset
-movie_sample <- movies[sample(nrow(movies), 10000), ]
+movie_sample <- movies[sample(nrow(movies), 10001), ]
 
 #factor the ratings variable and round to the nearest whole number
 movie_sample$rating <- factor(round(movie_sample$rating))
@@ -346,6 +349,31 @@ Autoplot works with time series as well!
 str(EuStockMarkets)
 
 autoplot(datasets::EuStockMarkets)
+```
+
+### Distance Matrices and Multi Dimensional Scaling (MDS)
+
+The cmdscale() function from the stats package performs Classical Multi-Dimensional Scaling and returns point coodinates as a matrix. Although autoplot() will work on this object, it will produce a heatmap, and not a scatter plot. However, if either eig = TRUE, add = TRUE or x.ret = TRUE is specified, cmdscale() will return a list instead of matrix. In these cases, the list method for autoplot() in the ggfortify package can deal with the output.
+
+```{r}
+#examine the eurodist dataset
+str(eurodist)
+
+# Autoplot + ggplot2 tweaking
+autoplot(eurodist) + 
+  coord_fixed()
+
+# Autoplot of MDS
+autoplot(cmdscale(eurodist, eig = TRUE), 
+         label = TRUE, 
+         label.size = 3, 
+         size = 0)
+```
+
+### K-Means Clustering
+ggfortify also supports stats::kmeans class objects. You must explicitly pass the original data to the autoplot function via the data argument, since kmeans objects don't contain the original data. The result will be automatically colored according to cluster.
+
+```{r}
 
 ```
 
