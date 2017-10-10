@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(MASS) #for datasets
 library(forcats)
+library(ggthemes)
 ```
 
 # Part 2
@@ -296,7 +297,7 @@ The `crabs` data set comes from the `MASS` package. The RW refers to measurement
 #examine the crabs dataset
 str(crabs)
 #create plot object using crabs dataset
-mycol <- c(pals::brewer.blues(4)[c(3,4)],pals::brewer.oranges(4)[c(3,4)])
+mycol <- c(pals::brewer.blues(4)[c(3,4)], pals::brewer.oranges(4)[c(3,4)])
 
 p <- ggplot(crabs, aes(x = CW, y = RW, color = interaction(sex, sp))) +
   geom_point() +
@@ -362,15 +363,106 @@ ggplot(UScereal, aes(x = calories, y = fct_reorder(f = cereal, x = calories, .de
 
 ## Themes
 
-In the plot above, you may have noticed the `theme` argument in which the y axis text size was modified. The theme function can modify many non data elements of the plot. These elements can be classified into three groups: 
-
+In the plot above, you may have noticed the `theme` argument in which the y axis text size was modified. The theme function can modify many non data elements of the plot. These elements can be classified into three groups:   
 * text - titles, axis labels, and legend or strip text.
 * line - major and minor grid lines within the plot panel, as well as axis ticks and lines.
 * rectangle - backgrounds of the legend, panel (main plot area), and strip (facets) area.
-
+  
 Each argument takes on a sub-argument `element_[text, rectangle, line, blank]` which controls such features as the family (font), face, color, size, fill, angle, etc...
 
 ```{r}
+#convert Titanic table to data frame
+titanic <- as.data.frame(Titanic)
 
+#examine titanic dataset
+str(titanic)
+
+p <- ggplot(titanic, aes(x = factor(Class), y = Freq, fill = factor(Survived))) +
+  geom_bar(stat = 'identity', position = 'dodge') +
+  facet_wrap(Sex ~ Age, scales = "free") +
+  labs(title = 'The Fate of Passengers on the Titanic', x = "Class", y = "Count") +
+  scale_fill_manual("Survived", values = c('tomato3', 'dodgerblue2')) +
+  scale_y_continuous()
+
+#examine default plot
+p
+
+#adjust plot elements using theme layer
+p + theme(axis.title = element_text(family = 'serif', size = 14, face = 'bold'), 
+          axis.text = element_text(face = 'italic', color = 'black'),
+          legend.background = element_blank(),
+          legend.key = element_blank(),
+          legend.position = 'bottom',
+          panel.border = element_rect(fill = NA, color = 'black'), 
+          panel.background = element_rect(fill = 'whitesmoke'),
+          panel.grid = element_blank(),
+          panel.spacing = unit(0.5, 'mm'),
+          plot.background = element_rect(fill = "lightgray", color = 'black'),
+          plot.title = element_text(face = 'bold', family = 'serif', hjust = 0.5, size = 20),
+          strip.background = element_blank(),
+          strip.text = element_text(face = 'bold.italic', family = 'serif', size = 10)
+          )
+```
+
+If you have multiple plots, adjusting the themes for each plot would be a lot of work. Luckily, there are more efficient ways of handling this. 
+
+Themes can be recycled by making the theme an object which is called in conjunction with your plot object. 
+
+```{r}
+theme_smoke <- theme(panel.background = element_blank(),
+                    legend.key = element_blank(),
+                    legend.background = element_blank(),
+                    strip.background = element_blank(),
+                    plot.background = element_rect(fill = 'whitesmoke', color = "black", size = 3),
+                    panel.grid = element_blank(),
+                    axis.line = element_line(color = "black"),
+                    axis.ticks = element_line(color = "black"),
+                    strip.text = element_text(size = 16, color = "steelblue"),
+                    axis.title.y = element_text(color = "steelblue", hjust = 0, face = "italic"),
+                    axis.title.x = element_text(color = "steelblue", hjust = 0, face = "italic"),
+                    axis.text = element_text(color = "black"),
+                    legend.position = "none")
+
+#plot titanic plot object with theme_smoke object
+p + theme_smoke
+```
+
+The default theme is`theme_gray` but there are a variety of themes that come with ggplot2. In addition, the `ggthemes` package has many more themes ready for use.
+
+```{r}
+#plot using classic ggplot2 theme 
+p + theme_classic()
+
+#plot using the wall street journal ggtheme 
+p + theme_wsj()
+```
+
+You can use `theme_update` and `theme_set` to update elements or change the default theme for all plots.
+
+Assigning the `theme_set()` to an object will allow you to switch back to the previously used theme.
+```{r}
+#change the theme and apply to an object
+old <- theme_set(theme_fivethirtyeight())
+
+#plot with the new default theme
+p
+
+#update element of the default theme
+modified_theme <- theme_update(axis.text = element_text(size = 14),
+                    panel.background = element_rect(fill = 'honeydew3'))
+
+#plot modified default theme
+p
+
+#show different plot uses the new updated theme
+ggplot(mtcars, aes(x = wt, y = mpg)) +
+  geom_point() +
+  facet_grid(~cyl)
+
+# revert back to original default theme  
+theme_set(old)
+
+#plot with original default theme
+p
 ```
 
