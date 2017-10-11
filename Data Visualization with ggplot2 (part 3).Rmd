@@ -17,6 +17,7 @@ library(ggplot2movies) #for datasets
 library(ggtern)
 library(MASS)
 library(reshape2)
+library(stringr)
 library(tidyverse)
 ```
 
@@ -131,6 +132,7 @@ p + geom_boxplot(varwidth = T)
 
 
 ```
+
 And just so we can confirm this argument is doing what we expect it to, we can check the math manually.
 ```{r}
 movie_sample %>%
@@ -374,6 +376,152 @@ autoplot(cmdscale(eurodist, eig = TRUE),
 ggfortify also supports stats::kmeans class objects. You must explicitly pass the original data to the autoplot function via the data argument, since kmeans objects don't contain the original data. The result will be automatically colored according to cluster.
 
 ```{r}
+# Perform clustering
+iris_k <- kmeans(iris[-5], 3)
+
+# Autoplot: color according to cluster
+autoplot(iris_k, data = iris, frame = TRUE)
+
+# Autoplot: above, plus shape according to species
+autoplot(iris_k, data = iris, frame = TRUE, shape = 'Species')
+```
+
+## Maps
+
+Many people are turning to R as a mapping tools for Geogrpahic Information Systems (GIS). There are different types of maps, including:
+
+* Choropleths - drawing a bunch of polygons 
+* Cartographic Maps
+
+
+### Choropleths
+
+The `maps` package is the easiest way to obtain map polygons, although, there are only a few locations available. 
+
+The available maps of political boundaries are:
+
+* Global: world, world2  
+* Country: france, italy, nz, usa  
+* USA: county, state  
+
+The maps can be accessed via `map_data()` from the  `ggplot2` package, which converts the map into a data frame containing the variables long and lat. To draw the map, you need to use `geom_polygon()` which will connect the points of latitude and longitude for you.
+
+```{r}
+#create map object using the map_data function
+state <- map_data(map = "state")
+
+#examine usa data
+str(state)
+
+# Build the map
+ggplot(state, aes(x = long, y = lat, group = group)) +
+  geom_polygon(color = "white") +
+  coord_map() +
+  theme_void()
+```
+
+Let's add some information to our map. We will use the `us.cities` dataset from the `maps` package
+
+```{r}
+#load require package
+library(maps)
+
+#exmaine the dataset
+str(us.cities)
+
+#Filter out Alaska and Hawaii
+us.cities <- us.cities %>% filter(!country.etc %in% c('HI', 'AK'))
+
+#Build the map with data from the us.cities dataframe
+p <- ggplot(state, aes(x = long, y = lat, group = group)) +
+  geom_polygon(color = 'black', fill = 'grey90') +
+  coord_map() +
+  theme_void()
+
+#Diaplay map with city pop info as points  
+p + geom_point(data = us.cities, 
+             aes(group = country.etc, col = pop),
+             size = 1.2, alpha = 0.5) +
+  scale_color_distiller(palette = 'Spectral')
+```
+
+### Cartographic Maps
+
+Topographical and/or Photographic Maps
+
+Using the `ggmap`[^1] package, we can use the `get_map()` function to access various maps, such as those offered by google. The only essential argument is `location`, however, there are many other options which you can specify.
+
+```{r}
+#load required package
+library(ggmap)
+
+houston <- get_map(location = "Houston, Texas", zoom = 11, source = "stamen", maptype = "toner")
+
+#plot location using ggmap
+ggmap(houston)
+```
+
+Similar to choropleths, we can map points onto a cartographic map. Using the houston map from above, we can map the `crime` dataset from the `ggmap` package which include Houston related crimes between Jan 2010 to August 2010.
+
+```{r}
+#load required package
+library(ggthemes) #for map theme
+
+#examine the crime dataset
+str(crime)
+
+#map the crime statistics colored by offense
+ggmap(houston) +
+  geom_point(data = crime, aes(col = offense), size = 1, alpha = 0.4)+
+  theme_map()
+```
+
+Not bad! `ggmap` even has functions which allow you to *geocode* locations by pulling the information from the internet (google).
+
+```{r}
+#examine the sites around houston we are interested in
+houston_sites <- c("Houston Zoo, Houston", "Space Center, Houston", "Minute Maid Park, Houston", "George Bush Intercontinental Airport, Houston")
+
+#geocode houston_sites
+codes <- geocode(houston_sites)
+
+codes$location <- str_replace(string = houston_sites, pattern = ", Houston", replace = "")
+
+#examine codes
+codes
+
+#create map object
+houston <- get_map(location = "Houston, Texas", source = "google", maptype = 'terrain')
+
+#map our newly coded locations
+ggmap(houston) + 
+  geom_point(data = codes, aes(color = location), size = 5)+
+  theme_map()
 
 ```
 
+There's one more way we can define the coordinates of our map. Instead of using a particular location, The `bbox` function allows you to define the boundary box around your coordinates. We'll use the `wind` dataset which has wind data from Hurricane Ike. 
+
+```{r}
+#filter crime to include only points in Houston area
+crime_sub <- crime %>% filter(lon <= -94.5 & lon > -97 & lat > 26 & lat < )
+
+#create a bbox using the coordinates of the long and lat of the codes dataframe.
+#f is the fraction to which the boundaries are to be extended.
+bbox <- make_bbox(data = crime_sub, lon = lon, lat = lat, f = 1)
+
+#create map object using bbox coordinates
+houston <- get_map(location = bbox, zoom = 11,  maptype = 'terrain')
+
+ggmap(houston) +
+  stat_density2d(data = crime_sub,
+                 aes(x = lon, y = lat, fill = ..level.., alpha = ..level..),
+                 geom = 'polygon', bins = 15, show.legend = F) +
+  scale_fill_gradient(low = "forestgreen", high = "red")
+  theme_map()
+```
+
+
+
+[^1]: D. Kahle and H. Wickham. ggmap: Spatial Visualization with ggplot2. The R Journal, 5(1), 144-161. URL
+  http://journal.r-project.org/archive/2013-1/kahle-wickham.pdf
