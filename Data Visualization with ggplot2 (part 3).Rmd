@@ -504,7 +504,7 @@ There's one more way we can define the coordinates of our map. Instead of using 
 
 ```{r}
 #filter crime to include only points in Houston area
-crime_sub <- crime %>% filter(lon <= -94.5 & lon > -97 & lat > 26 & lat < )
+crime_sub <- crime %>% filter(lon <= -94.5 & lon > -97 & lat > 26 & lat < 30)
 
 #create a bbox using the coordinates of the long and lat of the codes dataframe.
 #f is the fraction to which the boundaries are to be extended.
@@ -521,6 +521,56 @@ ggmap(houston) +
   theme_map()
 ```
 
+## Animations
+
+Animations are useful for dense temporal data, or geospatial data. They can be used as a great exploratory tool as well. 
+
+
+Using the `animations` package, motion charts can be made a few ways.
+
+First, by making a series of plots via a for loop and saving them as a GIF.
+
+```{r}
+#load package
+library(animation)
+library(gganimate)
+library(lubridate)
+
+#turn sunspots data into dataframe
+sunspots <- fortify(sunspots)
+
+names(sunspots) <- c("date", "sunspots")
+#create year and month variables using (lubridate functions) year & month
+
+sunspots <- sunspots %>% 
+  mutate(year = year(date),
+         month = month(date))
+
+p <- ggplot(sunspots, aes(x = year, y = sunspots, group = month, frame = month))+
+  geom_line()
+
+gganimate(p, interval = 1.2)
+
+#create GIF object
+saveGIF({
+ 
+  for(i in unique(sunspots$month)){
+    
+    #filter sunspots for each month
+    data <- filter(sunspots, month == i)
+    
+    #creat plot object
+    p <- ggplot(data = data, aes(x = year, y = sunspots))+
+      geom_line(aes(group = month))+
+      ggtitle(i)
+    
+    print(p)
+  }
+}, movie.name = "sunspots.GIF", img.name = "sunspots", interval = .1)
+
+
+
+```
 
 
 [^1]: D. Kahle and H. Wickham. ggmap: Spatial Visualization with ggplot2. The R Journal, 5(1), 144-161. URL
