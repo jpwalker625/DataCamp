@@ -5,9 +5,8 @@ date: "October 3, 2017"
 output: html_document
 ---
 
-
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = T, warning = F, message = F)
 
 #load required libraries
 library(forcats)
@@ -409,7 +408,6 @@ The maps can be accessed via `map_data()` from the  `ggplot2` package, which con
 ```{r}
 #create map object using the map_data function
 state <- map_data(map = "state")
-
 #examine usa data
 str(state)
 
@@ -455,7 +453,7 @@ Using the `ggmap`[^1] package, we can use the `get_map()` function to access var
 #load required package
 library(ggmap)
 
-houston <- get_map(location = "Houston, Texas", zoom = 11, source = "stamen", maptype = "toner")
+houston <- get_map(location = "Houston, Texas", source = "stamen", maptype = "toner")
 
 #plot location using ggmap
 ggmap(houston)
@@ -473,7 +471,7 @@ str(crime)
 #map the crime statistics colored by offense
 ggmap(houston) +
   geom_point(data = crime, aes(col = offense), size = 1, alpha = 0.4)+
-  theme_map()
+  theme_void()
 ```
 
 Not bad! `ggmap` even has functions which allow you to *geocode* locations by pulling the information from the internet (google).
@@ -495,7 +493,7 @@ houston <- get_map(location = "Houston, Texas", source = "google", maptype = 'te
 
 #map our newly coded locations
 ggmap(houston) + 
-  geom_point(data = codes, aes(color = location), size = 5)+
+  geom_point(data = codes, aes(color = location), size = 5) +
   theme_map()
 
 ```
@@ -517,7 +515,7 @@ ggmap(houston) +
   stat_density2d(data = crime_sub,
                  aes(x = lon, y = lat, fill = ..level.., alpha = ..level..),
                  geom = 'polygon', bins = 15, show.legend = F) +
-  scale_fill_gradient(low = "forestgreen", high = "red")
+  scale_fill_gradient(low = "forestgreen", high = "red") +
   theme_map()
 ```
 
@@ -532,46 +530,41 @@ First, by making a series of plots via a for loop and saving them as a GIF.
 
 ```{r}
 #load package
-library(animation)
 library(gganimate)
 library(lubridate)
+library(gapminder)
 
 #turn sunspots data into dataframe
 sunspots <- fortify(sunspots)
 
 names(sunspots) <- c("date", "sunspots")
-#create year and month variables using (lubridate functions) year & month
 
+#create year and month variables using (lubridate functions) year & month
 sunspots <- sunspots %>% 
   mutate(year = year(date),
-         month = month(date))
+         month = month(date, label = T))
 
-p <- ggplot(sunspots, aes(x = year, y = sunspots, group = month, frame = month))+
+p <- ggplot(sunspots, aes(x = month, y = sunspots, group = year, frame = year))+
   geom_line()
 
-gganimate(p, interval = 1.2)
-
-#create GIF object
-saveGIF({
- 
-  for(i in unique(sunspots$month)){
-    
-    #filter sunspots for each month
-    data <- filter(sunspots, month == i)
-    
-    #creat plot object
-    p <- ggplot(data = data, aes(x = year, y = sunspots))+
-      geom_line(aes(group = month))+
-      ggtitle(i)
-    
-    print(p)
-  }
-}, movie.name = "sunspots.GIF", img.name = "sunspots", interval = .1)
-
-
-
+gganimate(p, interval = 0.05)
 ```
 
+Let's put our skills to the test by applying some animation to some cartographic/map data. For this we will use the `gapminder` data from the identically named package which provides demographic information on various countries from 1952 to 2007.
+```{r}
+#create map object
+world_map <- map_data(map = 'world')
+
+#examine the world_map data
+str(world_map)
+
+ggplot(world_map, aes(x = long, y = lat, order = order, group = group))+
+  geom_polygon(color = 'white', fill = 'grey90') +
+  coord_map()
+
+#examine the gapminder dataset
+str(gapminder)
+```
 
 [^1]: D. Kahle and H. Wickham. ggmap: Spatial Visualization with ggplot2. The R Journal, 5(1), 144-161. URL
   http://journal.r-project.org/archive/2013-1/kahle-wickham.pdf
