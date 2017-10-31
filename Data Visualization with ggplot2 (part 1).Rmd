@@ -91,7 +91,7 @@ ggplot(diamonds_sample, aes(carat, price, color = clarity, shape = cut, size = c
 ```
 
 ### Attributes
-The aesthetic layers can be applied as **attributes**. It is important to know the difference between the two. Where aesthetics are mapped to specifici data points on the plot based on the variables, attributes are applied to the entire plot object. 
+The aesthetic layers can be applied as **attributes**. It is important to know the difference between the two. Where aesthetics are mapped to specific data points on the plot based on the variables, attributes are applied to the entire plot object. 
 
 ```{r}
 p <- ggplot(diamonds_sample, aes(carat, price, color = clarity))

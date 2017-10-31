@@ -2,7 +2,9 @@
 title: "Data Visualization with GGPLOT2 (Part 3)"
 author: "Joseph Walker"
 date: "October 3, 2017"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -14,7 +16,6 @@ library(geomnet)
 library(ggfortify)
 library(ggplot2movies) #for datasets
 library(ggtern)
-library(MASS)
 library(reshape2)
 library(stringr)
 library(tidyverse)
@@ -523,48 +524,220 @@ ggmap(houston) +
 
 Animations are useful for dense temporal data, or geospatial data. They can be used as a great exploratory tool as well. 
 
+The `animation` and `gganimate` packages are useful for creating plots with motion. 
 
-Using the `animations` package, motion charts can be made a few ways.
+You will need a graphic device converter such as [ImageMagick](https://imagemagick.org/) or [GraphicsMagick](http://www.graphicsmagick.org/) to get your animated plots to work. 
 
-First, by making a series of plots via a for loop and saving them as a GIF.
+For MAC users, you may also need to install [FFMPEG](https://www.ffmpeg.org/). 
+
+
+Let's make a simple animation using the `animation` package. The `saveGIF` function takes on the following arguments: 
+
+- *expression* - the plot you want to animate (generally some sort of loop to create multiple plots which will be combined to create our gif)  
+- *movie.name* - the name of the animation (with the extension i.e. '.gif')
+- *img.name* - the filename of the sequence of images. **I find this is necessary to include to get the animation to run without any errors**
+- *interval* - the speed at which you want your animation to run at. The higher the value, the slower the animation.  
+- *convert* - the call to the converter (either imagemagick or graphicsmagick)
+
+```{r}
+library(animation)
+
+#Use saveGIF function with for loop to create animated plot object
+saveGIF(expr = {
+  
+  #sets environment options to use the graphics magick convert option
+  ani.options(convert = "gm convert")
+  
+  #use for loop to create a series of plots which will be pasted together
+  for (i in 1:10) plot(runif(25), ylim = 0:1)
+  
+  },movie.name = "runif.gif", img.name = 'runif', interval = 0.2, convert = 'gm convert')
+
+```
+If everything is installed properly, the code above should generate a plot in the R console, and save the animation to the working directory. To get the animation to run in a document such as this, you will need to create a link to the saved animation like this:  
+
+`![insert_caption_here](path_to_file/filename.gif)`
+
+Your animation should appear with the caption below it.
+
+![histogram](C:/workspace/DataCamp/runif.gif)
+
+The `gganimate` package is a wrapper around the `animation` package which makes it easier to use than its predecessor, in my opinion. It takes advantage of the `frame` aesthetic, which acts like the for loop on the variable you want to animate. Let's take a look at some historical storm data using the `storms` dataset.
 
 ```{r}
 #load package
 library(gganimate)
 library(lubridate)
-library(gapminder)
 
-#turn sunspots data into dataframe
-sunspots <- fortify(sunspots)
+#examine the storms dataset
+str(storms)
 
-names(sunspots) <- c("date", "sunspots")
+# extract names of  storms from 2005 that reached ctaegory 5
+names <- storms %>% 
+  filter(year == 2005 & category ==5) %>% 
+  dplyr::select(name) %>% 
+  distinct %>% 
+  pull #converts data frame to vector
 
-#create year and month variables using (lubridate functions) year & month
-sunspots <- sunspots %>% 
-  mutate(year = year(date),
-         month = month(date, label = T))
 
-p <- ggplot(sunspots, aes(x = month, y = sunspots, group = year, frame = year))+
-  geom_line()
+#filter storms dataset to include all data from storms that reached category 5 in 2005
+storms <- storms %>% filter(name %in% names & year == 2005)
 
-gganimate(p, interval = 0.05)
-```
+#create date variable using existing date related variables
+storms <- storms %>% mutate(date = str_c(storms$year, storms$month, storms$day, sep = "-"))
 
-Let's put our skills to the test by applying some animation to some cartographic/map data. For this we will use the `gapminder` data from the identically named package which provides demographic information on various countries from 1952 to 2007.
-```{r}
-#create map object
-world_map <- map_data(map = 'world')
+#add hour
+storms <- storms %>% mutate(date = str_c(storms$date, storms$hour, sep = " "))
 
-#examine the world_map data
-str(world_map)
+#make date time
+#truncated = allows the time to be converted to date_time without having the minutes or seconds
+storms$date <- ymd_h(storms$date, truncated = 3)
 
-ggplot(world_map, aes(x = long, y = lat, order = order, group = group))+
-  geom_polygon(color = 'white', fill = 'grey90') +
+#create bbox using long & lat of storms dataset
+storms_bbox <- make_bbox(data = storms, lon = long, lat = lat)
+
+#get map of the storm coordinates made from bbox
+storms_map <- get_map(storms_bbox,maptype = 'watercolor', source = "google")
+
+#create map object and plot data to map
+p <- ggmap(storms_map) +
+  geom_label(data = storms, 
+             
+            aes(x = long,
+                y = lat,
+                color = factor(name),
+                label = category,
+                size = category,
+                group = factor(name),
+                frame = date,
+                cumulative = T))+
+  # guides(size = "none")+
+  scale_color_discrete("Hurricane") +
+  theme_void() +
   coord_map()
+p
+#Make animated plot, save to file in working directory
+gganimate(p, interval = 0.2, filename = 'storms.gif', convert = "gm convert")
 
-#examine the gapminder dataset
-str(gapminder)
 ```
+
+How do the wind speeds compare at each category level for the different Hurricanes?
+
+```{r}
+p <- ggplot(storms, aes(x = date, y = wind, color = name, frame = date, group = name, cumulative = T)) +
+  geom_line() +
+  facet_wrap(~name, scales = "free")
+p
+gganimate(p, interval = 0.2, filename = "storm-winds.gif", convert = "gm convert")
+```
+
+And finally, for those that are extremely obsessive when it comes to their visualizations, we can use the `tweenr` package to create beautiful smooth plots.
+
+You can install it from cran or you can install the development version using: `devtools::install_github("thomasp85/tweenr")`
+
+```{r}
+library(tweenr)
+
+#Create variables needed for tween_elements
+storms <- storms %>% 
+  mutate(date = as.numeric(date - min(date)+1),
+         ease = "linear",
+         status = as.factor(status))
+
+
+#create a tween_elements object from our storms dataset
+storms_tween <- tweenr::tween_elements(data = storms, time = "date", group = "name", ease = 'ease', nframes = 1000)
+
+p <- ggplot(storms_tween, aes(x = wind, y = pressure, color = .group, size = category, frame = .frame, group = .group), cumulative = T) +
+  geom_point()
+
+
+
+gganimate(p, interval = 0.2, filename = 'storms.gif', convert = "gm convert")
+```
+
+## Internals
+
+Grid graphics are the foundation on which `ggplot2` is built. In the examples below, we will explore some of the features of the `grid` package.
+
+The package was developed by Paul Murell to overcome some of the deficiencies base R plotting functions. There are two components to grid graphics: graphic output, and viewports.
+
+
+**Graphical oututs are controlled with the `grid.___()` functions.**
+
+```{r}
+#load grid package
+library(grid)
+
+# Draw rectangle in null viewport
+grid.rect(gp = gpar(fill = "grey90"))
+
+# Write text in null viewport
+grid.text("null viewport")
+
+# Draw a line
+grid.lines(x = c(0, 0.75), y = c(0.25, 1),
+          gp = gpar(lty = 2, col = "red"))
+```
+
+**Viewports control how graphical outputs are arranged/plotted.**
+
+```{r}
+# Create new viewport: vp
+vp <- viewport(x = 0.5, y = 0.5, width = 0.5, height = 0.5, just = "center")
+
+# Push vp
+pushViewport(vp)
+
+# Populate new viewport with rectangle
+grid.circle(gp = gpar(fill = "blue"))
+
+```
+
+*Grobs*, or Graphical Objects, are the object forms of the graphical outputs found in plots.
+
+```{r}
+# A simple plot p
+p <- ggplot(mtcars, aes(x = wt, y = mpg, col = factor(cyl))) + geom_point()
+
+# Create gtab with ggplotGrob()
+gtab <- ggplotGrob(p)
+
+# Print out gtab
+gtab
+
+# Extract the grobs from gtab: gtab
+g <- gtab$grobs
+
+#draw only the legend
+legend_index <- which(vapply(g, inherits, what = "gtable", logical(1)))
+
+grid.draw(g[[legend_index]])
+
+grid.draw(g[[15]])
+```
+
+It is possible to modify the gtable to add new graphical objects as in this example:
+
+```{r}
+# show layout of the legend grob
+gtable::gtable_show_layout(g[[legend_index]])
+
+# Create text grob
+my_text <- textGrob(label = "Motor Trend, 1974", gp = gpar(fontsize = 7, col = "gray25"))
+
+# 2 - Use gtable_add_grob to modify original gtab
+new_legend <- gtable::gtable_add_grob(x = gtab$grobs[[legend_index]], grobs = my_text, t = 2, l = 3, b = 5, r = 2)
+  
+# 3 - Update in gtab
+gtab$grobs[[legend_index]] <- new_legend
+
+# 4 - Draw gtab
+grid.draw(gtab)
+```
+
+
+
 
 [^1]: D. Kahle and H. Wickham. ggmap: Spatial Visualization with ggplot2. The R Journal, 5(1), 144-161. URL
   http://journal.r-project.org/archive/2013-1/kahle-wickham.pdf
