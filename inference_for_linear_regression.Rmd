@@ -1,0 +1,204 @@
+---
+title: "Inference For Linear Regression"
+output:
+  html_document: default
+  html_notebook: default
+---
+
+To do inference, it is necessary to know the sampling distribution of the slope under the hypothesis that there is no relationship between the response and explanatory variables. In other words, you are taking the sample distribution under the conditions that the null hypothesis is TRUE.
+Permutation
+
+Permuting is a way of sampling the data such that the response and explanatory values are not samples in the original pairs.
+
+In the mid-20th century, a study was conducted that tracked down identical twins that were separated at birth: one child was raised in the home of their biological parents and the other in a foster home. In an attempt to answer the question of whether intelligence is the result of nature or nurture, both children were given IQ tests. The resulting data is given for the IQs of the foster twins (Foster is the response variable) and the IQs of the biological twins (Biological is the explanatory variable).
+
+```{r}
+library(infer)
+library(tidyverse)
+
+twins <- read.csv("data/twins.csv", header = T)
+
+head(twins, 5)
+
+ggplot(twins, aes(x = Biological, y = Foster)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = F)
+```
+
+Calculate the observed slope of the dataset
+```{r}
+#load broom package for tidying models
+library(broom)
+
+#obtain the slope value as a vector (pull function returns selected column as a vector)
+obs_slope <- lm(Foster ~ Biological, data = twins) %>%
+  tidy() %>%
+  filter(term == "Biological") %>% 
+  pull(estimate)
+
+obs_slope
+```
+
+Now we will permute the data so that the null hypothesis is true and we observe no relationship between the two variables. We will simulate the data ten times.
+
+```{r}
+#set seed for reproducibility
+set.seed(1234)
+
+perm_data <- twins %>%
+  specify(Foster ~ Biological) %>%
+  hypothesize(null = "independence") %>%
+  generate(reps = 100, type = "permute")
+
+ggplot(perm_data, aes(x = Biological, y = Foster)) +
+  geom_point() +
+  geom_line(stat = "smooth", method = "lm", se = F, aes(group = replicate), color = "blue", alpha = 0.3) +
+  geom_smooth(method = 'lm', se = F, color = "red")
+```
+
+As you see above, we have created a permuted dataset where the slopes are now centered around 0. Below we willcalculate the values of the slopes and plot them on a histogram against the observed slope.
+
+```{r}
+#calculate the slope values of the perm_slopes
+perm_slopes <- perm_data %>%
+  calculate(stat = "slope")
+
+#view distirbution of the permuted slopes vs. the observed_slope
+ggplot(perm_slopes, aes(x = stat)) +
+  geom_histogram(bins = 15) +
+  geom_vline(xintercept = obs_slope, color = "red")
+```
+
+Now that we have created the null sampling distribution, we can use it to find the p-value associated with the original slope statistic from the twins data. We will calculate the absolute value to make it a two-sided test.
+
+```{r}
+# Calculate the absolute value of the slope
+abs_obs_slope <- lm(Foster ~ Biological, data = twins) %>%
+  tidy() %>%   
+  filter(term == "Biological") %>%
+  pull(estimate) %>%
+  abs() 
+
+# Compute the p-value  
+perm_slopes %>% 
+  mutate(abs_perm_slope = abs(stat)) %>%
+  summarize(p_value = mean(abs_perm_slope > abs_obs_slope))
+```
+
+We get a value of 0. This makes sense! What this tells us is that the probability of getting a value as or more extreme than what we observe in the original dataset (0.9) is 0 if the null hypothesis were true. 
+
+In other words, we would not expect to see a positive slope value of 0.9 if we sampled the distribution over and over and over again given that there is no relationship between the variables. Since this is not the case, we must reject the null hypothesis.
+
+#Bootstrapping
+
+Where as permuting the data is used for hypothesis testing, bootstrapping is another sampling method which can be used to determine the variation in your data.
+
+Bootstrapping is a sampling method which consists of repeatedly sampling the data with replacement. This allows us to estimate the sampling distribution and standard error of the slope coefficient. Using the sampling distribution will allow you to directly find a confidence interval for the underlying population slope.
+
+```{r}
+# Bootstrap the slopes
+set.seed(4747)
+BS_data <- twins %>%
+  specify(Foster ~ Biological) %>%
+  generate(reps = 100, type = "bootstrap")
+
+ggplot(BS_data, aes(x = Biological, y = Foster)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = F, aes(group = replicate, color = replicate)) +
+  geom_smooth(method = "lm", se = F, color = "red")
+```
+
+Now let's calculate the slopes of the bootstrapped samples and use these to generate confidence intervals.
+
+```{r}
+#calculate slopes
+BS_slopes <- BS_data %>%
+  calculate(stat = "slope")
+
+# Create a confidence interval
+BS_slopes %>% 
+summarize(lower = mean(stat) -  2*sd(stat),
+          upper = mean(stat) + 2*sd(stat))
+```
+
+Alternatively, a CI for the slope can be created using the percentiles of the distribution of the bootstrapped slope statistics. We can calculate the percentiles using the `quantile` function.
+
+
+```{r}
+# Set alpha
+alpha <- .05
+
+quantile(BS_slopes$stat)
+
+# Create a confidence interval  
+BS_slopes %>% 
+summarize(low = quantile(stat, alpha / 2), 
+          high = quantile(stat, 1 - alpha / 2))
+```
+
+# t-distribution
+
+The t statistic (the standardized slope) is the slope coefficient divided by the standard error
+
+In thinking about the scientific research question, if IQ is caused only by genetics, then we would expect the slope of the line between the two sets of twins to be 1. Testing the hypothesized slope value of 1 can be done by making a new test statistic which evaluates how far the observed slope is from the hypothesized value of 1.
+
+newt=slope−1/SE
+
+If the hypothesis that the slope equals one is true, then the new test statistic will have a t-distribution which we can use for calculating a p-value.
+
+# Test the new hypothesis
+lm(Foster ~ Biological, data = twins) %>% 
+  tidy() %>% 
+  filter(term == "Biological") %>%
+  mutate(statistic_test1 = (estimate - 1)/std.error, 
+      p_value_test1 = 2 * pt(statistic_test1, df = nrow(twins) - 2))
+      
+### Comparing randomization inference and t-inference
+When technical conditions (see next chapter) hold, the inference from the randomization test and the t-distribution test should give equivalent conclusions. They will not provide the exact same answer because they are based on different methods. But they should give p-values and confidence intervals that are reasonably close.      
+# Find the p-value
+perm_slope %>%
+  mutate(abs_perm_slope = abs(stat)) %>%
+  summarize(p_value = mean(abs_perm_slope > abs(obs_slope)))
+  
+CI using t-theory
+In previous courses, you have created confidence intervals with the formula of statistic plus/minus some number of standard errors. With bootstrapping, we typically use two standard errors. With t-based theory, we use the specific t-multiplier.
+
+# Set alpha
+alpha <- .05
+
+# Find the critical value
+crit_val <- qt(0.975, df = nrow(twins) -2)
+
+# Tidy the model with the confidence level alpha
+lm(Foster ~ Biological, data=twins) %>% 
+   tidy(conf.int = T, conf.level = 1-alpha)
+
+# Find the lower and upper bounds of the confidence interval
+lm(Foster ~ Biological, data = twins) %>%
+    tidy() %>%
+    mutate(lower = estimate - crit_val * std.error,
+        upper = estimate + crit_val * std.error)
+        
+# Set alpha and find the critical value
+alpha <- .05
+crit_val <- qt((1-alpha/2), df = nrow(twins) - 2)
+
+# Find confidence intervals for the response
+predMeans <- lm(Foster ~ Biological, data = twins) %>% 
+  augment() %>%  
+  mutate(lowMean = .fitted - crit_val*.se.fit,
+         upMean = .fitted + crit_val*.se.fit) 
+
+# Examine the intervals
+head(predMeans)
+
+# Plot the data with geom_ribbon()
+ggplot(predMeans, aes(x = Biological, y = Foster)) + 
+  geom_point() +
+  stat_smooth(method = "lm", se = FALSE) + 
+  geom_ribbon(aes(ymin = lowMean, ymax = upMean), alpha=.2)
+
+# Plot the data with stat_smooth()
+ggplot(twins, aes(x = Biological, y = Foster)) + 
+  geom_point() +
+  stat_smooth(method = "lm", se = TRUE) 
