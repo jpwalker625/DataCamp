@@ -736,7 +736,128 @@ gtab$grobs[[legend_index]] <- new_legend
 grid.draw(gtab)
 ```
 
+## BagPlots
 
+A useful but not very popular plot that can take the place of a boxplot. It has three essential parts:  
+  
+* The hull: the inner ring which outlines the center region (not that informative)
+* The Bag: Contains 50% of the datapoints, similar to the IQR
+* The Loop: Contains all points within the fence which is calculated as some factor enlargement of the bag (default 3)
+
+Points outside the loops are drawn as individual dots.
+
+We can compute the data for a bagplot and plot one using the `aplpack` package.
+
+```{r}
+#load required package
+library(aplpack)
+
+#Create bagplot of iris dataset: sepal.length vs. sepal.width
+bagplot(x = iris$Petal.Width, y =  iris$Petal.Length)
+
+# Get bagplot stats
+bag <- compute.bagplot(x = iris$Petal.Width, y =  iris$Petal.Length)
+
+# Examine the variables computed in the bag object.
+names(bag)
+
+# Highlight components
+points(bag$hull.loop, col = "green", pch = 16)
+points(bag$hull.bag, col = "orange", pch = 16)
+points(bag$pxy.outlier, col = "purple", pch = 16)
+```
+
+The `alpack` package makes it easy to create this bagplot with the built-in function. If were to make this plot using ggplot2, we could make three separate geom layers as in this example:
+
+```{r}
+# Create data frames from the bag matrices
+hull.loop <- data.frame(x = bag$hull.loop[,1], y = bag$hull.loop[,2])
+hull.bag <- data.frame(x = bag$hull.bag[,1], y = bag$hull.bag[,2])
+pxy.outlier <- data.frame(x = bag$pxy.outlier[,1], y = bag$pxy.outlier[,2])
+
+# Finish the ggplot command
+ggplot(iris, aes(x = Petal.Width,  y = Petal.Length)) +
+  geom_polygon(data = hull.loop, aes(x = x, y = y), fill = "green") +
+  geom_polygon(data = hull.bag, aes(x = x, y = y), fill = "orange") +
+  geom_point(data = pxy.outlier, aes(x = x, y = y), col = "purple", pch = 16, cex = 1.5)
+```
+
+The plot above is a good starting point, but we can do better. In the process, we will learn how to use the `ggproto` function which can be used to make any new layer you can think of and ultimately build your own plots. `ggproto` takes 4 arguments:
+
+* name of the object (in quotations)
+* what it inherits from (usually Stat)
+* required aesthetics
+* what the stat should do
+
+```{r}
+# ggproto for StatLoop (hull.loop)
+StatLoop <- ggproto("StatLoop", Stat,
+                    required_aes = c("x", "y"),
+                    compute_group = function(data, scales) {
+                      bag <- compute.bagplot(x = data$x, y = data$y)
+                      data.frame(x = bag$hull.loop[,1], y = bag$hull.loop[,2])
+                    })
+
+# ggproto for StatBag (hull.bag)
+StatBag <- ggproto("StatBag", Stat,
+                   required_aes = c("x", "y"),
+                   compute_group = function(data, scales) {
+                     bag <- compute.bagplot(x = data$x, y = data$y)
+                     data.frame(x = bag$hull.bag[,1], y = bag$hull.bag[,2])
+                   })
+
+# ggproto for StatOut (pxy.outlier)
+StatOut <- ggproto("StatOut", Stat,
+                   required_aes = c("x", "y"),
+                   compute_group = function(data, scales) {
+                     bag <- compute.bagplot(x = data$x, y = data$y)
+                     data.frame(x = bag$pxy.outlier[,1], y = bag$pxy.outlier[,2])
+                   })
+```
+
+Next we need to plug our ggproto objects into a ggplot function with a custom layer that will plot the bagplot.
+
+```{r}
+# Combine ggproto objects in layers to build stat_bag()
+stat_bag <- function(mapping = NULL, data = NULL, geom = "polygon",
+                     position = "identity", na.rm = FALSE, show.legend = NA,
+                     inherit.aes = TRUE, loop = FALSE, ...) {
+  list(
+    # StatLoop layer
+    layer(
+      stat = StatLoop, data = data, mapping = mapping, geom = geom, 
+      position = position, show.legend = show.legend, inherit.aes = inherit.aes,
+      params = list(na.rm = na.rm, alpha = 0.35,  col = NA, ...)
+    ),
+    # StatBag layer
+    layer(
+      stat = StatBag, data = data, mapping = mapping, geom = geom, 
+      position = position, show.legend = show.legend, inherit.aes = inherit.aes,
+      params = list(na.rm = na.rm, alpha = 0.35, col = NA, ...)
+    ),
+    # StatOut layer
+    layer(
+      stat = StatOut, data = data, mapping = mapping, geom = "point", 
+      position = position, show.legend = show.legend, inherit.aes = inherit.aes,
+      params = list(na.rm = na.rm, alpha = 0.7, col = NA, shape = 21, ...)
+    )
+  )
+}
+```
+
+And finally, we can apply the data to our new function to make the plot
+
+```{r}
+ggplot(iris, aes(x = Petal.Width,  y = Petal.Length))+
+  stat_bag(fill = "black")
+```
+
+This custom function is flexible as well. Instead of calling the fill in the stat_bag layer, we can group the dataset and apply the stat_bag function to each group.
+
+```{r}
+ggplot(iris, aes(x = Petal.Width,  y = Petal.Length, fill = Species))+
+  stat_bag()
+```
 
 
 [^1]: D. Kahle and H. Wickham. ggmap: Spatial Visualization with ggplot2. The R Journal, 5(1), 144-161. URL
