@@ -1,0 +1,112 @@
+---
+title: "Supervised Learing"
+output:
+  html_document:
+    df_print: paged
+editor_options:
+  chunk_output_type: console
+---
+
+Supervised Learning
+
+What is regression? In the statistical sense, regression is predicting an expected value from a set of inputs.
+
+In the causal sense, regression is predicting a numerical outcome which distinguishes it from classification in which you are predicting a discrete outcome such as Yes or No.
+
+We call the expected outcome the "dependent variable". It is dependent on the inputs, also called the predictors, or "independent variables".
+
+The fundamental principle of linear regression
+
+Change in Y is linearly proportional to change in X.
+Each X contributes additively to Y.
+Y is the sum of all of the weighted inputs.
+
+A linear regression model requires training data and a formula.
+
+In R, you can specify a formula using the tilde `~`. The variable on the left side is always the dpeendent vartiable and isd a function of the right side, the explanatory, or independent value.
+
+```{r}
+library(tidyverse)
+library(broom)
+library(MASS) # for UScereals data
+
+#examine the training data
+glimpse(UScereal)
+
+#create a formula
+fmla <- formula("calories ~ fat")
+
+#examine the formula
+fmla
+```
+
+Now that we have a formula we can use it to create a model on our dataset
+```{r}
+#create linear model
+cereals_model <- lm(formula = fmla, data = UScereal)
+
+#examine the model
+cereals_model
+```
+
+Once you have fit the model, you can examine it various ways. 
+
+base R: summary()
+```{r}
+summary(cereals_model)
+```
+
+using the broom package, the tidy way: glance()
+```{r}
+glance(cereals_model)
+```
+
+sigR package wrapFTest
+
+Using the stats package (preloaded in R), we can use the `predict` function to find the predicted value for each x based on a specified model.
+```{r}
+UScereal$predictions <- predict(object = cereals_model, newdata = UScereal)
+
+head(UScereal)
+```
+
+Let's visualize how the predicted values stack up against the observed values
+```{r}
+ggplot(UScereal, aes(x = predictions, y = calories)) +
+  geom_point() +
+  geom_abline(color = "blue")
+```
+
+And we can use the `predict` function to make a prediction for a new dataset or observation. Say we want to estimate how many calories are in a cereal at a specified amount of fat.
+
+```{r}
+range(UScereal$fat)
+
+new_cereal <- data.frame(fat = c(7, 11))
+```
+
+```{r}
+new_cereal$calories <- predict(object = cereals_model, newdata = new_cereal)
+
+ggplot(UScereal, aes(x = fat, y = calories)) +
+  geom_point() +
+  geom_point(data = new_cereal, aes(x = fat, y = calories), size = 2.5, color = "#ba0000") +
+  geom_abline(intercept = 117.599, slope = 22.361, color = "blue")
+```
+
+
+Pros of Linear Regression
+
+Easy to fit and apply
+Concise - (don't need much storage)
+Less prone to overfitting (training and test data usually behave similarly)
+Interpretable
+
+Cons
+Can only express linear and additive relationships
+Collinearity 
+  input variables are partially correlated (weight and age)
+  coefficients might change sign
+  
+  coefficients (or standard errors) look too large
+  model may be unstable
