@@ -7,9 +7,22 @@ editor_options:
   chunk_output_type: console
 ---
 
-Supervised Learning
+All of the datasets used in the examples come from the `OIdata` and `openintro` packages.
 
-What is regression? In the statistical sense, regression is predicting an expected value from a set of inputs.
+```{r eval=FALSE}
+# install.packages("devtools")
+library(devtools)  
+  
+install_github("OpenIntroOrg/openintro-r-package", subdir = "OIdata")  
+  
+install_github("OpenIntroOrg/openintro-r-package", subdir = "openintro")
+```
+
+For more information on Open Intro, visit the [website](https://www.openintro.org/) or the [github page](https://github.com/OpenIntroOrg/openintro-r-package) for more information.
+
+# What is regression? 
+
+In the statistical sense, regression is predicting an expected value from a set of inputs.
 
 In the causal sense, regression is predicting a numerical outcome which distinguishes it from classification in which you are predicting a discrete outcome such as Yes or No.
 
@@ -28,13 +41,13 @@ In R, you can specify a formula using the tilde `~`. The variable on the left si
 ```{r}
 library(tidyverse)
 library(broom)
-library(MASS) # for UScereals data
+library(openintro)
 
 #examine the training data
-glimpse(UScereal)
+glimpse(textbooks)
 
 #create a formula
-fmla <- formula("calories ~ fat")
+fmla <- formula('amazNew ~ uclaNew')
 
 #examine the formula
 fmla
@@ -43,70 +56,283 @@ fmla
 Now that we have a formula we can use it to create a model on our dataset
 ```{r}
 #create linear model
-cereals_model <- lm(formula = fmla, data = UScereal)
+textbooks_model <- lm(formula = fmla, data = textbooks)
 
 #examine the model
-cereals_model
+textbooks_model
 ```
 
 Once you have fit the model, you can examine it various ways. 
 
 base R: summary()
 ```{r}
-summary(cereals_model)
+summary(textbooks_model)
 ```
 
 using the broom package, the tidy way: glance()
 ```{r}
-glance(cereals_model)
+glance(textbooks_model)
 ```
-
-sigR package wrapFTest
 
 Using the stats package (preloaded in R), we can use the `predict` function to find the predicted value for each x based on a specified model.
 ```{r}
-UScereal$predictions <- predict(object = cereals_model, newdata = UScereal)
+textbooks$predictions <- predict(object = textbooks_model, newdata = textbooks)
 
-head(UScereal)
+head(textbooks)
 ```
 
 Let's visualize how the predicted values stack up against the observed values
 ```{r}
-ggplot(UScereal, aes(x = predictions, y = calories)) +
+ggplot(textbooks, aes(x = predictions, y = amazNew)) +
   geom_point() +
   geom_abline(color = "blue")
 ```
 
-And we can use the `predict` function to make a prediction for a new dataset or observation. Say we want to estimate how many calories are in a cereal at a specified amount of fat.
+And we can use the `predict` function to make a prediction for a new dataset or observation. 
 
 ```{r}
-range(UScereal$fat)
-
-new_cereal <- data.frame(fat = c(7, 11))
+#make dataset of new textbooks to make predictions on
+new_textbooks <- data.frame(uclaNew = c(65, 142))
 ```
 
 ```{r}
-new_cereal$calories <- predict(object = cereals_model, newdata = new_cereal)
+#make Amazon price predictions on the new textbooks based on UCLA price
+new_textbooks$amazNew <- predict(object = textbooks_model, newdata = new_textbooks)
 
-ggplot(UScereal, aes(x = fat, y = calories)) +
+#get slope and intercept of original model
+intercept <- textbooks_model$coefficients[1]
+slope <- textbooks_model$coefficients[2]
+
+#plot results
+ggplot(textbooks, aes(x = uclaNew, y = amazNew)) +
   geom_point() +
-  geom_point(data = new_cereal, aes(x = fat, y = calories), size = 2.5, color = "#ba0000") +
-  geom_abline(intercept = 117.599, slope = 22.361, color = "blue")
+  geom_point(data = new_textbooks, aes(x = uclaNew, y = amazNew), size = 2.5, color = "#ba0000") +
+  geom_abline(intercept = intercept, slope = slope, color = "blue")
 ```
 
 
-Pros of Linear Regression
+**Pros of Linear Regression**
 
-Easy to fit and apply
-Concise - (don't need much storage)
-Less prone to overfitting (training and test data usually behave similarly)
-Interpretable
+* Easy to fit and apply  
+* Concise - (don't need much storage)  
+* Less prone to overfitting (training and test data usually behave similarly)  
+* Interpretable  
 
-Cons
-Can only express linear and additive relationships
-Collinearity 
-  input variables are partially correlated (weight and age)
-  coefficients might change sign
+**Cons** 
+
+* Can only express linear and additive relationships  
+* Colinearity   
+    + input variables are partially correlated (weight and age)  
+    + coefficients might change sign  
+    + coefficients (or standard errors) look too large  
+    + model may be unstable  
+
+## Model Evaluation
+
+**The following section will explain the parameters which are used to evaluate a model's performance.**  
   
-  coefficients (or standard errors) look too large
-  model may be unstable
+We will use the `bac` dataset which analyzes the relationship between the blood alcohol content (bac) and number of beers drank for 16 students.
+
+```{r}
+glimpse(bac)
+
+#model the grades as a function of TV
+bac_mod <- lm(BAC ~ Beers, bac)
+
+glance(bac_mod)
+bac$pred <- predict(bac_mod, bac)
+
+ggplot(bac, aes(x = BAC, y = pred)) + 
+  geom_point()
+
+```
+
+
+### Residuals
+  
+The **residuals** Tell you how far off the actual value is from the predicted value. They can also tell you whether there are correlations in your data still unaccounted for. You should expect to see no systematic errors in the plot of the residuals meaning that the amount of error is consistent and random for the entire dataset.
+
+The residual for any obervation is calcualted as the difference between the actual and predicted value.
+
+```{r}
+bac$residuals <- bac$BAC - bac$pred
+
+ggplot(bac, aes(x = pred, y = residuals)) +
+  geom_pointrange(aes(ymin= 0, ymax = residuals)) +
+  geom_hline(yintercept = 0, linetype = 3) +
+  ggtitle("residuals vs. linear model prediction")
+```
+
+
+### Gain Curve
+  
+**Gain Curve** viualizes the sort order of the predictions. The y-axis plots the cumulative sum of the response variable as a fraction and the x-axis plots the numbers of observations as a fraction. This is useful in situations where the sort order is more important than the actual values.  
+  
+Use the `WVPlots` package for the gain curve function.
+
+```{r}
+library(WVPlots)
+
+GainCurvePlot(frame = bac, xvar = "pred", truthVar = "BAC", title = "Blood Alcohol Content Model")
+```
+
+
+### RMSE  
+  
+**Root Mean Squared Error*. How much error is associated with the prediction values compared to the actual values. You can compare the RMSE to the SD of the actual values to get an idea of how well your model is at predicting the values.
+
+The RMSE is calculated as 
+
+$$RMSE = \sqrt{mean(residual^2)}$$
+
+
+```{r}
+#calculate RMSE
+sqrt(mean(bac$residuals^2))
+
+#calculate sd of the original data
+sd(bac$BAC)
+
+```
+
+### $R^2$
+
+The $R^2$ is a measure of the goodness of fit, or rather, how well does your model explain the data? The $R^2$ value ranges between 0 - 1. A value of 0 means that you'd be better off guessing what the estimated value would be. A value of 1 means the model fits well and that you've accounted for all the variation in the data.
+
+$$R^2 = 1 - {RSS \over SS_{tot}} $$
+where 
+
+RSS is the residual sum of squares  (the variance from the model)
+  $$RSS = \sum(y - prediction)^2$$
+and  
+  
+TSS is the total sum of squares (the variance from the data)
+$$SS_{tot} = \sum(y - \bar y)^2$$
+
+```{r}
+#calculate rss
+rss <- sum((bac$BAC - bac$pred)^2)
+
+#calculate tss
+tss <- sum((bac$BAC - mean(bac$BAC))^2)
+
+#calculate r_squared
+r_squared <- 1 - (rss/tss)
+
+#compare r_squared to the r_squared from glance() function and from the correlation coefficient
+r_squared
+
+glance(bac_mod)$r.squared
+
+rho <- cor(y = bac$BAC, x = bac$pred)
+rho^2
+```
+
+## Model Training
+
+In general, a model performs much better on the training data than on data the model has not yet seen.
+
+It is common to split the dataset into a **training/test** set. This is recommended when the data is plentiful.
+
+**Test/Train splitting tests the final model**
+
+The following examples use the `diamonds` dataset, part of the `ggplot2` package.
+```{r}
+#model the data (price vs. carat)
+glimpse(diamonds)
+
+#get the number of rows in bac
+nrows <- nrow(diamonds)
+
+#calculate 75% of the nrows 
+target <- round(0.75 * nrows)
+
+#generate a vector of nrow uniform random variables
+gp <- runif(n = nrows)
+
+#split the data into test/training sets
+train <- diamonds[gp <  0.75, ]
+test <- diamonds[gp > .75, ]
+
+nrow(train)
+nrow(test)
+
+#create model useing training data
+dmnds_mod <- lm(price ~ carat, train)
+
+summary(dmnds_mod)
+
+#predict price from carat on the training set
+train$pred <- predict(dmnds_mod, train)
+
+#predict price from carat on the test set
+test$pred <- predict(dmnds_mod, test)
+
+#Evaluate the RMSE for each
+rmse <- function(predcol, ycol) {
+  res <- predcol- ycol
+  sqrt(mean(res^2))
+}
+
+(rmse_train <- rmse(train$pred, train$price))
+(rmse_test <- rmse(test$pred, test$price))
+
+#evaluate the $R^2$ for each
+rsq <- function(predcol, ycol) {
+  tss = sum( (ycol - mean(ycol))^2 )
+  rss = sum( (predcol - ycol)^2 )
+  1 - rss/tss
+}
+
+(rsq_train <- rsq(train$pred, train$price))
+(rsq_test <- rsq(test$pred, test$price))
+
+#plot the predicted vs. the outcome for the test data
+ggplot(test, aes(x = pred, y = price))+
+  geom_point() +
+  geom_abline(color = "blue")
+```
+
+
+If the data set does not have enough data to split off a test set, the **cross-validation** method is preferred.
+
+One way of creating a cross-validation plan is to use the `kWayCrossValidation` function from the `vtreat` package.
+
+**Cross-validation tests the modeling process**
+
+The following examples use the `helmet` dataset from the `openintro` package. The helmet dataset describes the relationship between socioeconomic status measured as the percentage of children in a neighborhood receiving reduced-fee lunches at school(lunch) and the percentage of bike riders in the neighborhood wearing helmets (helmet). 
+
+```{r}
+#install.packages("vtreat")
+library(vtreat)
+
+#examine the helmet dataset
+glimpse(helmet)
+
+#count nrows of helmet
+helmet_rows <- nrow(helmet)
+
+#create cross-validtion model with 3-folds
+splits <- kWayCrossValidation(nRows = helmet_rows, nSplits = 3)
+
+#examine splits
+str(splits)
+
+#run the 3-fold cross-validation plan on the data
+helmet$cv_pred <- 0
+
+for(i in 1:3){
+  split <- splits[[i]]
+  model <- lm(lunch ~ helmet, helmet[split$train, ])
+  helmet$cv_pred[split$app] <- predict(model, helmet[split$app, ])
+}
+
+#predict from a full model
+helmet$pred <- predict(lm(lunch ~ helmet, helmet))
+
+#get RMSE of full model and CV set
+rmse(helmet$pred, helmet$lunch)
+
+rmse(helmet$cv_pred, helmet$lunch)
+```
+
