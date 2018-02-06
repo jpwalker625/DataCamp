@@ -1,5 +1,5 @@
 ---
-title: "Supervised Learing"
+title: "Supervised Learning"
 output:
   html_document:
     df_print: paged
@@ -335,4 +335,37 @@ rmse(helmet$pred, helmet$lunch)
 
 rmse(helmet$cv_pred, helmet$lunch)
 ```
+
+## Issues to Consider 
+
+**categorical variables** - one-hot-coding
+
+The model will leave out one of the categories as this is the reference-level. The coefficient value tells you the change expected when all other variables are 0 relative to the reference level.
+
+**interactions**
+
+Recall that linear regression assumes an additive relationship between variables. 
+
+plant height ~ sunlight + bacteria
+
+Change in height is the sum of the effects of bacteria and light. Therefore, 
+Change in sunlight causes the same change in height, independent of bacteria. And also,
+change in bactera causes the same change in height, independent of sunlight.
+
+**An interaction occurs when the simultaneous influence of two variables on the outcome is not additive.*
+
+In a formula, you can specify interacion with a colon (:)
+`r y ~ a:b`
+
+You can specify main effects AND interaction with an asterisk (*)
+`r y ~ a*b`
+is the same as
+`r y ~ a + b + a:b`
+
+And finally, you can express the product of two variables using: I(*)
+`r y ~ I(a*b)`
+
+## Transformations
+
+log transformations are usueful in monetary values. Often have wide dynamic range and long tails.
 
