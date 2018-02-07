@@ -474,3 +474,25 @@ goog_long %>%
   scale_color_brewer(palette = "Dark2")
 ```
 
+# Tree-based Methods
+
+## Random Forests
+
+Multiple diverse decision trees averaged together.
+
+Reduces overfit
+Increases model expresiveness
+Finer grain predictions
+
+`ranger` package for the function with the same name that will perform random forest modeling.
+
+```{r}
+install.packages("ranger")
+library(ranger)
+
+ranger(formula = , data = , num.trees = , respect.unordered.factors = , seed = )
+```
+
+
+## One-hot Encoding
+One-hot encoding is required to convert categorical values to numerical
