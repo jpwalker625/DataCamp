@@ -127,7 +127,7 @@ ggplot(textbooks, aes(x = uclaNew, y = amazNew)) +
     + coefficients (or standard errors) look too large  
     + model may be unstable  
 
-## Model Evaluation
+# Model Evaluation
 
 **The following section will explain the parameters which are used to evaluate a model's performance.**  
   
@@ -306,6 +306,9 @@ The following examples use the `helmet` dataset from the `openintro` package. Th
 #install.packages("vtreat")
 library(vtreat)
 
+#load helmet dataset from openintro
+
+
 #examine the helmet dataset
 glimpse(helmet)
 
@@ -336,11 +339,16 @@ rmse(helmet$pred, helmet$lunch)
 rmse(helmet$cv_pred, helmet$lunch)
 ```
 
-## Issues to Consider 
+# Issues to Consider 
+
+## categorical variables
 
 **categorical variables** - one-hot-coding
 
 The model will leave out one of the categories as this is the reference-level. The coefficient value tells you the change expected when all other variables are 0 relative to the reference level.
+
+
+##Interactions
 
 **interactions**
 
@@ -352,20 +360,117 @@ Change in height is the sum of the effects of bacteria and light. Therefore,
 Change in sunlight causes the same change in height, independent of bacteria. And also,
 change in bactera causes the same change in height, independent of sunlight.
 
-**An interaction occurs when the simultaneous influence of two variables on the outcome is not additive.*
+**An interaction occurs when the simultaneous influence of two variables on the outcome is not additive.**
 
 In a formula, you can specify interacion with a colon (:)
-`r y ~ a:b`
+
+`y ~ a:b`
 
 You can specify main effects AND interaction with an asterisk (*)
-`r y ~ a*b`
+
+`y ~ a*b`  
+  
 is the same as
-`r y ~ a + b + a:b`
-
+  
+`y ~ a + b + a:b`
+  
 And finally, you can express the product of two variables using: I(*)
-`r y ~ I(a*b)`
-
+  
+`y ~ I(a*b)`
+  
 ## Transformations
 
 log transformations are usueful in monetary values. Often have wide dynamic range and long tails.
+
+
+# Dealing with Non-Linear Responses
+
+
+### logistic regression
+Predicting whether an even occurs (yes/no) fals into the realm of classification.   
+
+However, predicting the probability that an event occurs is regression.
+
+For the latter, we can use **logistic regression**, which assumes inputs are additive, and linear in log-odds. The log-odds is the ratio between
+the probability of an event occurring to the probability of the event not occurring.
+
+The `glm` function is used for logistic regression and functions similarly to the `lm` function with the addition of the `family` argument. For logistic regression, the family argument will be set to **binomial**.
+
+To evaluate a logistic regression model, the deviance and pseudo $R^2$ are used. The deviance is similar to the variance.
+
+### poisson and quasipoisson regression
+
+
+### GAM
+
+Generalized Additive Models.
+
+`mgcv` package for the `gam` function.
+
+`s()` function to denote a non-linear relationship of a ocntinuous variable in your formula.
+
+```{r}
+#install.packages("mgcv")
+library(lubridate)
+library(mgcv)
+
+#exmaine the data
+glimpse(goog)
+#convert date variable to date format
+goog$Date <- as_date(goog$Date)
+
+#convert date variable to continuous sequence 
+#for comptability with splining in formula
+goog$d <- seq(from = nrow(goog), to = 1)
+
+#split data into train and test sets
+n <- nrow(goog)
+
+sample <- sample.int(n = n, size = floor(0.75 * n), replace = F) 
+
+goog_train <- goog[sample, ]
+goog_test <- goog[-sample, ]
+
+
+#visualize the variables of interest in the training set
+ggplot(goog, aes(x = Date)) +
+  geom_point(data = goog_train, aes(y = Close, color = "blue")) +
+  geom_point(data = goog_test, aes (y = Close, color = "green")) +
+  scale_color_manual(name = "dataset", values = c('blue' = 'blue', 'green' = 'green'), labels = c("train", "test"))
+
+#Fit GAM model on training set
+model.gam <- gam(formula = Close ~ s(d), data = goog_train, family = gaussian)
+
+#fit lm model on training set and compare
+model.lm <- lm(formula = Close ~ d, data = goog_train)
+
+summary(model.gam)
+summary(model.lm)
+
+plot(model.gam)
+
+#get predictions for linear model
+goog_test$pred.lm <- predict(model.lm, goog_test)
+
+#get predicitons from gam model
+#use as.numeric to convert matrix output to vector
+goog_test$pred.gam <- as.numeric(predict(model.gam, goog_test))
+
+#gather predictions into a long dataset
+goog_long <- goog_test %>%
+  gather(key = modeltype, value = prediction, ... = pred.lm, pred.gam)
+
+#calculate the rmse
+goog_long %>%
+  mutate(residual = Close - prediction) %>%
+  group_by(modeltype) %>%
+  summarise(rmse = sqrt(mean(residual^2)))
+
+goog_long %>%
+  ggplot(aes(x = Date)) +
+  geom_point(aes(y = Close)) +
+  geom_point(aes(y = prediction, color = modeltype)) +
+  geom_line(aes(y = prediction, color = modeltype, linetype = modeltype)) +
+  scale_color_brewer(palette = "Dark2")
+```
 
