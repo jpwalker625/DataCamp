@@ -88,7 +88,7 @@ ggplot(textbooks, aes(x = predictions, y = amazNew)) +
   geom_abline(color = "blue")
 ```
 
-And we can use the `predict` function to make a prediction for a new dataset or observation. 
+And we can use the `predict` function to make a prediction for a new dataset or observation(s). 
 
 ```{r}
 #make dataset of new textbooks to make predictions on
@@ -99,7 +99,7 @@ new_textbooks <- data.frame(uclaNew = c(65, 142))
 #make Amazon price predictions on the new textbooks based on UCLA price
 new_textbooks$amazNew <- predict(object = textbooks_model, newdata = new_textbooks)
 
-#get slope and intercept of original model
+#get slope and intercept of the model
 intercept <- textbooks_model$coefficients[1]
 slope <- textbooks_model$coefficients[2]
 
@@ -134,29 +134,46 @@ ggplot(textbooks, aes(x = uclaNew, y = amazNew)) +
 We will use the `bac` dataset which analyzes the relationship between the blood alcohol content (bac) and number of beers drank for 16 students.
 
 ```{r}
+#examine the dataset
 glimpse(bac)
 
-#model the grades as a function of TV
-bac_mod <- lm(BAC ~ Beers, bac)
-
-glance(bac_mod)
-bac$pred <- predict(bac_mod, bac)
-
-ggplot(bac, aes(x = BAC, y = pred)) + 
+#visualize the relationship between variables of interest
+ggplot(bac, aes(x = Beers, y = BAC)) +
   geom_point()
 
+#model the BAC as a function of beers drank
+bac_mod <- lm(BAC ~ Beers, bac)
+
+#View the model stats
+glance(bac_mod)
+
+#Make predictions on the original data using our model
+bac$pred <- predict(bac_mod, bac)
+
+#visualize the predicted value vs. the actual value
+ggplot(bac, aes(x = pred, y = BAC)) + 
+  geom_point() +
+  geom_abline(linetype = 2)
 ```
 
-
-### Residuals
+### residuals
   
 The **residuals** Tell you how far off the actual value is from the predicted value. They can also tell you whether there are correlations in your data still unaccounted for. You should expect to see no systematic errors in the plot of the residuals meaning that the amount of error is consistent and random for the entire dataset.
 
 The residual for any obervation is calcualted as the difference between the actual and predicted value.
 
 ```{r}
+#visualize the difference between the actual and predicted value
+ggplot(bac, aes(x = Beers, y = BAC)) +
+  geom_point() +
+  geom_abline(slope = bac_mod$coefficients[2],
+              intercept = bac_mod$coefficients[1]) +
+  geom_pointrange(aes(ymin = pred, ymax = BAC))
+
+#calculate the residuals
 bac$residuals <- bac$BAC - bac$pred
 
+#visualize the variance of the residuals
 ggplot(bac, aes(x = pred, y = residuals)) +
   geom_pointrange(aes(ymin= 0, ymax = residuals)) +
   geom_hline(yintercept = 0, linetype = 3) +
@@ -185,7 +202,7 @@ The RMSE is calculated as
 
 $$RMSE = \sqrt{mean(residual^2)}$$
 
-
+Below, we'll compare the RMSE to the standard deviation of the original dataset. Which is better?
 ```{r}
 #calculate RMSE
 sqrt(mean(bac$residuals^2))
@@ -236,13 +253,13 @@ It is common to split the dataset into a **training/test** set. This is recommen
 
 **Test/Train splitting tests the final model**
 
-The following examples use the `diamonds` dataset, part of the `ggplot2` package.
+The following examples uses fictitious tips data. We seek to model the monetary tip associated with a single group as a function of the bill total.
 ```{r}
-#model the data (price vs. carat)
-glimpse(diamonds)
+#examine the dataset
+glimpse(tips)
 
-#get the number of rows in bac
-nrows <- nrow(diamonds)
+#get the number of rows in diamonds
+nrows <- nrow(tips)
 
 #calculate 75% of the nrows 
 target <- round(0.75 * nrows)
@@ -251,22 +268,22 @@ target <- round(0.75 * nrows)
 gp <- runif(n = nrows)
 
 #split the data into test/training sets
-train <- diamonds[gp <  0.75, ]
-test <- diamonds[gp > .75, ]
+train <- tips[gp <  0.75, ]
+test <- tips[gp > .75, ]
 
 nrow(train)
 nrow(test)
 
 #create model useing training data
-dmnds_mod <- lm(price ~ carat, train)
+tips_mod <- lm(tip ~ bill, train)
 
-summary(dmnds_mod)
+summary(tips_mod)
 
 #predict price from carat on the training set
-train$pred <- predict(dmnds_mod, train)
+train$pred <- predict(tips_mod, train)
 
 #predict price from carat on the test set
-test$pred <- predict(dmnds_mod, test)
+test$pred <- predict(tips_mod, test)
 
 #Evaluate the RMSE for each
 rmse <- function(predcol, ycol) {
@@ -288,7 +305,7 @@ rsq <- function(predcol, ycol) {
 (rsq_test <- rsq(test$pred, test$price))
 
 #plot the predicted vs. the outcome for the test data
-ggplot(test, aes(x = pred, y = price))+
+ggplot(test, aes(x = pred, y = tip))+
   geom_point() +
   geom_abline(color = "blue")
 ```
@@ -305,9 +322,6 @@ The following examples use the `helmet` dataset from the `openintro` package. Th
 ```{r}
 #install.packages("vtreat")
 library(vtreat)
-
-#load helmet dataset from openintro
-
 
 #examine the helmet dataset
 glimpse(helmet)
@@ -343,10 +357,38 @@ rmse(helmet$cv_pred, helmet$lunch)
 
 ## categorical variables
 
-**categorical variables** - one-hot-coding
+We can use the function `model.matrix` to see how r deals with modeling categorical variables.
 
-The model will leave out one of the categories as this is the reference-level. The coefficient value tells you the change expected when all other variables are 0 relative to the reference level.
 
+```{r}
+library(MASS)
+
+#Examine the dataset
+glimpse(Rabbit)
+
+#create formula object
+fmla <- as.formula("BPchange ~ Dose + Treatment")
+
+#examine the structure of the model
+model.matrix(fmla, Rabbit)
+```
+
+
+```{r}
+#create a model using the formula
+rab_mod <- lm(fmla, Rabbit)
+
+#examine the model result
+summary(rab_mod)
+
+#predict the BP change for each observation
+Rabbit$pred <- predict(rab_mod, Rabbit)
+
+#plot the predicted BP change vs. actual
+ggplot(Rabbit, aes(x = pred, y = BPchange)) +
+  geom_point() +
+  geom_abline(color = "blue")
+```
 
 ##Interactions
 
@@ -398,8 +440,12 @@ The `glm` function is used for logistic regression and functions similarly to th
 
 To evaluate a logistic regression model, the deviance and pseudo $R^2$ are used. The deviance is similar to the variance.
 
+**titanic or biopsy dataset for logit regression**
+
+
 ### poisson and quasipoisson regression
 
+# epil dataset for poisson
 
 ### GAM
 
@@ -495,4 +541,8 @@ ranger(formula = , data = , num.trees = , respect.unordered.factors = , seed = )
 
 
 ## One-hot Encoding
+
+**categorical variables** - one-hot-coding
+
+The model will leave out one of the categories as this is the reference-level. The coefficient value tells you the change expected when all other variables are 0 relative to the reference level.
 One-hot encoding is required to convert categorical values to numerical
