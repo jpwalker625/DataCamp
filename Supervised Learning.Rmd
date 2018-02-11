@@ -422,6 +422,9 @@ And finally, you can express the product of two variables using: I(*)
   
 ## Transformations
 
+relative error to evaluate between models that are not on the same scale or factor.
+Example: modeling small purchases vs. large purchases. RMSE may be larger in the latter, but the relative error could be smaller.
+
 log transformations are usueful in monetary values. Often have wide dynamic range and long tails.
 
 
