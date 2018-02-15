@@ -279,10 +279,10 @@ tips_mod <- lm(tip ~ bill, train)
 
 summary(tips_mod)
 
-#predict price from carat on the training set
+#predict tips from bill total on the training set
 train$pred <- predict(tips_mod, train)
 
-#predict price from carat on the test set
+#predict tips from bill total on the test set
 test$pred <- predict(tips_mod, test)
 
 #Evaluate the RMSE for each
@@ -359,6 +359,9 @@ rmse(helmet$cv_pred, helmet$lunch)
 
 We can use the function `model.matrix` to see how r deals with modeling categorical variables.
 
+**Interpreting model estimates for categorical predictors**
+> The estimated intercept is the value of the response variable for the first category (i.e. the category corresponding to an indicator value of 0). The estimated slope is the average change in the response variable between two categories.
+
 
 ```{r}
 library(MASS)
@@ -422,10 +425,28 @@ And finally, you can express the product of two variables using: I(*)
   
 ## Transformations
 
+Transformations can take place on the response variable before modeling. A common example of this is log transforming monetary values, which are often lognormally distributed (tend to be skewed with a long tail). The procedure for doing this is as follows:
+
+1) Log the outcome and fit a model  
+2) Maker the predictions in log space  
+3) Transform the predictions back to the original outcome space.
+
+Log-transformed outcomes have miltiplicative error. In order to get around this, it is best to determine the relative error.
+
+```{r}
+library(OIdata)
+
+tips <- tips %>% filter(tip > 0)
+datasets::
+
+summary(tips)
+```
+
+
 relative error to evaluate between models that are not on the same scale or factor.
 Example: modeling small purchases vs. large purchases. RMSE may be larger in the latter, but the relative error could be smaller.
 
-log transformations are usueful in monetary values. Often have wide dynamic range and long tails.
+
 
 
 # Dealing with Non-Linear Responses
