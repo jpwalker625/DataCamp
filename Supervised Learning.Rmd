@@ -367,28 +367,28 @@ We can use the function `model.matrix` to see how r deals with modeling categori
 library(MASS)
 
 #Examine the dataset
-glimpse(Rabbit)
+glimpse(whiteside)
 
 #create formula object
-fmla <- as.formula("BPchange ~ Dose + Treatment")
+fmla <- as.formula("Gas ~ Temp + Insul")
 
 #examine the structure of the model
-model.matrix(fmla, Rabbit)
+head(model.matrix(fmla, whiteside, 5))
 ```
 
 
 ```{r}
 #create a model using the formula
-rab_mod <- lm(fmla, Rabbit)
+white_mod <- lm(fmla, whiteside)
 
 #examine the model result
-summary(rab_mod)
+summary(white_mod)
 
 #predict the BP change for each observation
-Rabbit$pred <- predict(rab_mod, Rabbit)
+whiteside$pred <- predict(white_mod, whiteside)
 
 #plot the predicted BP change vs. actual
-ggplot(Rabbit, aes(x = pred, y = BPchange)) +
+ggplot(whiteside, aes(x = pred, y = Gas)) +
   geom_point() +
   geom_abline(color = "blue")
 ```
@@ -434,20 +434,74 @@ Transformations can take place on the response variable before modeling. A commo
 Log-transformed outcomes have miltiplicative error. In order to get around this, it is best to determine the relative error.
 
 ```{r}
-library(OIdata)
 
-tips <- tips %>% filter(tip > 0)
-datasets::
+data(Sacramento, package = 'caret')
 
-summary(tips)
+glimpse(Sacramento)
+
+n <- nrow(Sacramento)
+
+sample <- sample.int(n = n, size = floor(0.7 * n), replace = F) 
+
+sac_train <- Sacramento[sample, ]
+sac_test <- Sacramento[-sample, ]
+
+sac_mod <- lm(price ~ sqft, sac_train)
+
+glance(sac_mod)
+
+sac_test$pred <- predict(sac_mod, sac_test)
+
+sac_test <- sac_test %>%
+  group_by(type) %>%
+  mutate(residual = pred - price,
+         relerr = residual/price)
+
+#compre the rmse to the relative rmse
+sac_test %>%
+group_by(type) %>% 
+  summarize(rmse = sqrt(mean(residual^2)),
+            rmse.rel = sqrt(mean(relerr^2)))
+
+#plot actual vs. predicted for each housing group
+ggplot(sac_test, aes(x = pred, y = price, color = type)) + 
+  geom_point() + 
+  geom_abline() + 
+  facet_wrap(~ type, ncol = 1, scales = "free") + 
+  ggtitle("Outcome vs prediction")
 ```
 
+Using the Cars93 dataset, we'll examine how log transforming the response can lead to better model results.
+```{r}
+glimpse(cars)
 
-relative error to evaluate between models that are not on the same scale or factor.
-Example: modeling small purchases vs. large purchases. RMSE may be larger in the latter, but the relative error could be smaller.
+car_n <- nrow(Cars93)
 
+car_sample <- sample.int(n = car_n, size = floor(.7 * car_n), replace = F)
 
+car_train <- Cars93[car_sample, ]
+car_test <- Cars93[-car_sample, ]
 
+#make model based on log value of response variable
+log_mod <- lm(log(Price) ~ Horsepower + MPG.city, car_train)
+
+#compare this to a regular model
+car_mod <- lm(Price ~ Horsepower + MPG.city, car_train)
+
+#compare the models
+glance(log_mod)$r.squared
+glance(car_mod)$r.squared
+
+#make predictions on the test set
+car_test$pred <- predict(log_mod, car_test)
+
+#convert predicted values back to original units
+car_test$pred_price <- exp(car_test$pred)
+
+ggplot(car_test, aes(x = pred_price, y = Price)) +
+  geom_point() +
+  geom_abline(color = "red") 
+```
 
 # Dealing with Non-Linear Responses
 
@@ -465,6 +519,24 @@ The `glm` function is used for logistic regression and functions similarly to th
 To evaluate a logistic regression model, the deviance and pseudo $R^2$ are used. The deviance is similar to the variance.
 
 **titanic or biopsy dataset for logit regression**
+
+```{r}
+glimpse(biopsy)
+
+biopsy <- biopsy %>%
+  dplyr::select(-ID)
+
+biopsy.fmla <- as.formula("class ~ .")
+
+logit_mod <- glm(formula = biopsy.fmla, family = binomial, data = biopsy)
+
+summary(logit_mod)
+
+glance(logit_mod)
+
+(pseudoR2 <- 1 - (glance(logit_mod)$deviance/glance(logit_mod)$null.deviance))
+
+```
 
 
 ### poisson and quasipoisson regression
