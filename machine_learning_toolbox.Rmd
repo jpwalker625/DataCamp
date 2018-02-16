@@ -10,13 +10,13 @@ Supervised Learning
 * predictive modeling
 * target variable (the variable you want to predict)
 
-two types of models
+two types of predictive models
 classification - qualitative
 regression - quantitative
 
 Use metrics to evaulate models
 RMSE
-out-of-sample erroris a better approach to prevent being too optimistic about your model due to the fact that we use RMSE to evaluate the model (training data) in the first place
+out-of-sample errors a better approach to prevent being too optimistic about your model due to the fact that we use RMSE to evaluate the model (training data) in the first place (overfitting)
 
 
 ```{r Machine Learning}
@@ -41,7 +41,7 @@ sqrt(mean(error^2))
 Out-of-sample error  
 * We Want models that don't overfit, and generalize well
 * Do the models perform well on new data
-* Test set
+* Test models on new data - key insight of machine learning
 
 ```{r randomize dataset}
 #order the dataset randomly to remove any biases in the ordering of the data

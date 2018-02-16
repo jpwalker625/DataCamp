@@ -7,8 +7,7 @@ editor_options:
   chunk_output_type: console
 ---
 
-All of the datasets used in the examples come from the `OIdata` and `openintro` packages.
-
+Some of the datasets in this tutorial come from the `openintro` and `OIdata` packages. To download, run the following commands: 
 ```{r eval=FALSE}
 # install.packages("devtools")
 library(devtools)  
@@ -18,7 +17,7 @@ install_github("OpenIntroOrg/openintro-r-package", subdir = "OIdata")
 install_github("OpenIntroOrg/openintro-r-package", subdir = "openintro")
 ```
 
-For more information on Open Intro, visit the [website](https://www.openintro.org/) or the [github page](https://github.com/OpenIntroOrg/openintro-r-package) for more information.
+For more information on Open Intro, visit the [website](https://www.openintro.org/) or the [github page](https://github.com/OpenIntroOrg/openintro-r-package).
 
 # What is regression? 
 
@@ -41,7 +40,7 @@ In R, you can specify a formula using the tilde `~`. The variable on the left si
 ```{r}
 library(tidyverse)
 library(broom)
-library(openintro)
+library(openintro) #
 
 #examine the training data
 glimpse(textbooks)
@@ -431,7 +430,7 @@ Transformations can take place on the response variable before modeling. A commo
 2) Maker the predictions in log space  
 3) Transform the predictions back to the original outcome space.
 
-Log-transformed outcomes have miltiplicative error. In order to get around this, it is best to determine the relative error.
+Log-transformed outcomes have multiplicative error. In order to get around this, it is best to determine the relative error.
 
 ```{r}
 
@@ -473,7 +472,7 @@ ggplot(sac_test, aes(x = pred, y = price, color = type)) +
 
 Using the Cars93 dataset, we'll examine how log transforming the response can lead to better model results.
 ```{r}
-glimpse(cars)
+glimpse(Cars93)
 
 car_n <- nrow(Cars93)
 
@@ -485,23 +484,54 @@ car_test <- Cars93[-car_sample, ]
 #make model based on log value of response variable
 log_mod <- lm(log(Price) ~ Horsepower + MPG.city, car_train)
 
-#compare this to a regular model
-car_mod <- lm(Price ~ Horsepower + MPG.city, car_train)
-
-#compare the models
-glance(log_mod)$r.squared
-glance(car_mod)$r.squared
-
 #make predictions on the test set
 car_test$pred <- predict(log_mod, car_test)
 
 #convert predicted values back to original units
-car_test$pred_price <- exp(car_test$pred)
+car_test$pred_logmod <- exp(car_test$pred)
 
-ggplot(car_test, aes(x = pred_price, y = Price)) +
+ggplot(car_test, aes(x = pred_logmod, y = Price)) +
   geom_point() +
-  geom_abline(color = "red") 
+  geom_abline(color = "red")
 ```
+
+Now let's compare the log transformed model to a 'normal' model.
+
+```{r}
+#create model based without log transformation
+car_mod <- lm(Price ~ Horsepower + MPG.city, car_train)
+
+#add predictions to the test set
+car_test$pred_carmod <- predict(car_mod, car_test)
+
+#gather the predictions and calculate residuals and relative error
+cars_long <- car_test %>%
+  gather(key = modeltype, value = pred, ... = pred_logmod, pred_carmod) %>%
+  mutate(residual = pred - Price,
+         relerr = residual / Price)
+
+#Now summarise the data to calculate the RMSE, relative RMSE and compare.
+cars_long %>%
+  group_by(modeltype) %>%
+  summarize(rmse = sqrt(mean(residual^2)),
+            relrmse = sqrt(mean(relerr^2)))
+```
+
+As we can see, the RMSE of the log transformed model is higher than the 'normal' model, however, the relative rmse is lower. Let's visualize how both models performed.
+
+```{r}
+#compare the r.squareds of the models
+glance(log_mod)$r.squared
+glance(car_mod)$r.squared
+
+ggplot(cars_long, aes(x = pred, y = Price, group = modeltype, color = modeltype)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = F)
+```
+
+## Transforming Input Variables
+
+
 
 # Dealing with Non-Linear Responses
 
@@ -526,9 +556,16 @@ glimpse(biopsy)
 biopsy <- biopsy %>%
   dplyr::select(-ID)
 
-biopsy.fmla <- as.formula("class ~ .")
+#create new column
+biopsy <- biopsy %>% mutate(malignant = 0)
 
-logit_mod <- glm(formula = biopsy.fmla, family = binomial, data = biopsy)
+#assign True or False to whether the class is malignant
+biopsy$malignant <- case_when(biopsy$class == "malignant" ~ TRUE,
+            biopsy$class != "malignant" ~ FALSE)
+
+biopsy.fmla <- as.formula("malignant ~ .")
+
+logit_mod <- glm(formula = biopsy.fmla, family = binomial, data = biopsy[ , -10])
 
 summary(logit_mod)
 
@@ -536,6 +573,15 @@ glance(logit_mod)
 
 (pseudoR2 <- 1 - (glance(logit_mod)$deviance/glance(logit_mod)$null.deviance))
 
+```
+
+Now we can predict the probability of the biopsy class based on the model.
+
+```{r}
+biopsy$pred <- predict(logit_mod, type = "response", newdata = biopsy)
+
+#plot the gain curve
+GainCurvePlot(frame = biopsy, xvar = "pred", truthVar = "malignant", title = "Biopsy class model")
 ```
 
 
@@ -629,10 +675,10 @@ Finer grain predictions
 `ranger` package for the function with the same name that will perform random forest modeling.
 
 ```{r}
-install.packages("ranger")
+#install.packages("ranger")
 library(ranger)
 
-ranger(formula = , data = , num.trees = , respect.unordered.factors = , seed = )
+#ranger(formula = , data = , num.trees = , respect.unordered.factors = , seed = )
 ```
 
 
