@@ -556,16 +556,9 @@ glimpse(biopsy)
 biopsy <- biopsy %>%
   dplyr::select(-ID)
 
-#create new column
-biopsy <- biopsy %>% mutate(malignant = 0)
+biopsy.fmla <- as.formula("class ~ .")
 
-#assign True or False to whether the class is malignant
-biopsy$malignant <- case_when(biopsy$class == "malignant" ~ TRUE,
-            biopsy$class != "malignant" ~ FALSE)
-
-biopsy.fmla <- as.formula("malignant ~ .")
-
-logit_mod <- glm(formula = biopsy.fmla, family = binomial, data = biopsy[ , -10])
+logit_mod <- glm(formula = biopsy.fmla, family = binomial(link ="logit"), data = biopsy)
 
 summary(logit_mod)
 
@@ -581,7 +574,18 @@ Now we can predict the probability of the biopsy class based on the model.
 biopsy$pred <- predict(logit_mod, type = "response", newdata = biopsy)
 
 #plot the gain curve
-GainCurvePlot(frame = biopsy, xvar = "pred", truthVar = "malignant", title = "Biopsy class model")
+GainCurvePlot(frame = biopsy, xvar = "pred", truthVar = "class", title = "Biopsy class model")
+```
+
+Another useful way to check the accuracy of a logistic regression model is to make a confusion matrix which will give us the a frequency table of the actual outcomes vs. the predictions (true positive, false positive, false negative, true negative).
+
+The Sensitivity tells you the true positive rate and the Specificity indicates the True Negative rate.
+
+```{r confusion.matrix}
+#convert predicted probabilities to classes
+biopsy$pred_class <- ifelse(biopsy$pred > 0.5, "malignant", "benign") 
+
+caret::confusionMatrix(biopsy$pred_class,  biopsy$class)
 ```
 
 

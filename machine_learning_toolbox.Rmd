@@ -201,7 +201,7 @@ model <- glm(Class ~ .,
 model
 # Predict on test: p
 p <- predict(model, test, type = "response")
-p
+
 ```
 
 
@@ -221,7 +221,7 @@ The Specificity tell you the true negative rate
 ```{r Confusion Matrix}
 # Calculate class probabilities: p_class
 p_class <- ifelse(p > .5, "M", "R")
-p_class
+
 # Create confusion matrix
 confusionMatrix(p_class, test$Class)
 
