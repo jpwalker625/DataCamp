@@ -415,7 +415,7 @@ plot(wine_model3)
 * Two primary forms:  
     + Lasso regression (penalizes # of non-zero coeffs)
     + Ridge regression (penalizes absolute magnitude of coeffs)
-* Attempts to fins a parsimonious model (simple)
+* Attempts to find a parsimonious model (simple)
 * Pairs well with random forest models
 
 many paremeters to tune:
