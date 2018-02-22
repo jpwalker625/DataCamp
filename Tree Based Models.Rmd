@@ -1,0 +1,59 @@
+---
+title: "Machine Learning with Tree-Based Models in R"
+output: html_notebook
+editor_options: 
+  chunk_output_type: inline
+---
+
+Tree based models are useful for making decisions or numeric predictions. 
+
+Interpretable - flow charts, decision trees
+
+Ease of Use 
+
+Accurate.
+
+Decision Tree Terminology: Root Node, Internal Nodes, Leaf Nodes 
+
+
+We will use recursive partitioning from the `rpart` package to train decision tree models.
+
+```{r}
+#install.packages("rpart")
+#install.packages("rpart.plot")
+
+#load necessary libraries
+library(rpart)
+library(rpart.plot)
+library(tidyverse)
+library(gdata)
+
+#load the dataset
+url <- "http://archive.ics.uci.edu/ml/machine-learning-databases/00350/default%20of%20credit%20card%20clients.xls"
+credit <- read.xls(xls = url, perl = "C:/Perl/bin/perl.exe", header= TRUE, skip = 1)
+
+glimpse(credit)
+
+credit_model <- rpart(formula = default.payment.next.month ~ ., data = credit, method = "class")
+
+rpart.plot(x = credit_model, yesno = 2, type = 0, extra = 0)
+```
+
+Advantages of decision trees:
+
+Easy to interpret, understand, and visualize
+Can handle both numerical and categorical features (inputs)
+Can handle missing data elegantly
+Robust to outliers
+Require little data preparation
+Can model non-linearity in the data
+Can be trained quickly on large datasets
+
+Disadvantges
+Large trees can be difficult to interpret
+High vairance which causes poor model performance
+Easy to overfit
+
+
+Start the modeling process by making an 80/20 train/test split.
+
