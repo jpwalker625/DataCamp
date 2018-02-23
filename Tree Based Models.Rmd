@@ -1,7 +1,9 @@
 ---
 title: "Machine Learning with Tree-Based Models in R"
-output: html_notebook
-editor_options: 
+output:
+  html_document: default
+  html_notebook: default
+editor_options:
   chunk_output_type: inline
 ---
 
@@ -30,7 +32,10 @@ library(gdata)
 
 #load the dataset
 url <- "http://archive.ics.uci.edu/ml/machine-learning-databases/00350/default%20of%20credit%20card%20clients.xls"
-credit <- read.xls(xls = url, perl = "C:/Perl/bin/perl.exe", header= TRUE, skip = 1)
+credit <- read.xls(xls = url, 
+                   #perl = "C:/Perl/bin/perl.exe", 
+                   header= TRUE, 
+                   skip = 1)
 
 glimpse(credit)
 
@@ -56,4 +61,17 @@ Easy to overfit
 
 
 Start the modeling process by making an 80/20 train/test split.
+
+
+## Evaluating Classification Model & Performance
+
+Accuracy measures how often the classifier predicts the class correctly.
+
+(n of correct predictions) / (n total data points)
+
+Confusion Matrix gives a more detailed look at the Actual vs. Predicted Class values.
+
+## Splitting Criterion In Trees
+
+A classification tree partitions the data so that groups are as homogenous (pure) as possible. From a mathematical standpoint, it makes sense to measure the impurity of the partitioning - the gini index
 
