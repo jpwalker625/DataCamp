@@ -212,7 +212,30 @@ rpart.plot(x = credit_model, yesno = 2, type = 0, extra = 0)</code></pre>
 <p>Accuracy measures how often the classifier predicts the class correctly.</p>
 <p>(n of correct predictions) / (n total data points)</p>
 <p>Confusion Matrix gives a more detailed look at the Actual vs. Predicted Class values.</p>
-<pre><code>Actual</code></pre>
+</div>
+<div id="splitting-criterion-in-trees" class="section level2">
+<h2>Splitting Criterion In Trees</h2>
+<p>A classification tree partitions the data so that groups are as homogenous (pure) as possible. From a mathematical standpoint, it makes sense to measure the impurity of the partitioning - the gini index</p>
+</div>
+<div id="regression-trees" class="section level2">
+<h2>Regression Trees</h2>
+<p>We use <code>method = 'anova'</code> as an argument to model regression trees.</p>
+<p>Performance metrics for regression:</p>
+<div id="mean-absolute-error" class="section level3">
+<h3>Mean Absolute Error</h3>
+<p><span class="math display">\[MAE = {\sum | actual - predicted |\over n} \]</span></p>
+</div>
+<div id="root-mean-square-error" class="section level3">
+<h3>Root Mean Square Error</h3>
+<p><span class="math display">\[ RMSE = \sqrt{\sum{(actual - predicted)^2}\over n} \]</span></p>
+<p>Next, we will use the test set to generate predicted values using the model. And finally we will use the <code>metrics</code> package to calculate the rmse.</p>
+<p>hyperparameters for a decision tree</p>
+<p>rpart.control minsplit: minimum number of data points required to attempt a split cp: complexity parameter maxdepth: depth of a decision tree</p>
+<p>grid search for model selection. This helps to find the right hyperparameters.</p>
+<p>model hyper parameters are the knobs that you tweak to get slightly different models.</p>
+<p>The goal of a grid search is to find the combination of hyper parameters that produce the best model.</p>
+<p>We can evaluate models by running them on a validation set and choosing the proper performance metric such as classification error, AUC, or RMSE</p>
+</div>
 </div>
 
 

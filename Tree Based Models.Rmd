@@ -75,3 +75,32 @@ Confusion Matrix gives a more detailed look at the Actual vs. Predicted Class va
 
 A classification tree partitions the data so that groups are as homogenous (pure) as possible. From a mathematical standpoint, it makes sense to measure the impurity of the partitioning - the gini index
 
+##Regression Trees
+
+We use `method = 'anova'` as an argument to model regression trees.
+
+Performance metrics for regression:
+
+### Mean Absolute Error
+ $$MAE = {\sum | actual - predicted |\over n} $$
+
+### Root Mean Square Error
+$$ RMSE = \sqrt{\sum{(actual - predicted)^2}\over n} $$
+ 
+ Next, we will use the test set to generate predicted values using the model. And finally we will use the `metrics` package to calculate the rmse.
+ 
+ 
+ hyperparameters for a decision tree
+ 
+ rpart.control
+minsplit: minimum number of data points required to attempt a split
+cp: complexity parameter
+maxdepth: depth of a decision tree
+
+grid search for model selection. This helps to find the right hyperparameters.
+
+model hyper parameters are the knobs that you tweak to get slightly different models.
+
+The goal of a grid search is to find the combination of hyper parameters that produce the best model.
+
+We can evaluate models by running them on a validation set and choosing the proper performance metric such as classification error, AUC, or RMSE 
