@@ -25,6 +25,7 @@ We will use recursive partitioning from the `rpart` package to train decision tr
 library(caret)
 library(ipred)
 library(ModelMetrics)
+library(randomForest)
 library(rpart)
 library(rpart.plot)
 library(readxl)
@@ -474,5 +475,30 @@ print(credit_caret_model_test_auc)
                 
 # Compare to caret 5-fold cross-validated AUC
 credit_caret_model$results[, "ROC"]
+```
+
+# Random Forest
+
+* Similar to bagged trees.
+    * Both use ensemble modeling to aggregate many models to find the best one
+* In Random Forest, only a subset of features are selected at random at each split in a decision tree. 
+* In bagging, all features are used.
+* reduces correlation between sampled trees
+* better performance
+
+We will use the `randomForest` package to create a model using the random forest algorithm. We can also use the `ranger` package.
+
+Again we will utilize the credit dataset in the following examples.
+```{r}
+#set seed for reproducibility
+set.seed(9141)
+
+# Train a random forest
+rf_credit_model <- randomForest(formula = default ~ ., data = credit_train)
+
+#examine the random forest
+rf_credit_model
+
+#
 ```
 
