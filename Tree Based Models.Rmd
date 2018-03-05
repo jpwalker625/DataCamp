@@ -23,6 +23,7 @@ We will use recursive partitioning from the `rpart` package to train decision tr
 ```{r}
 #load required libraries
 library(caret)
+library(gbm)
 library(ipred)
 library(ModelMetrics)
 library(randomForest)
@@ -500,5 +501,94 @@ rf_credit_model <- randomForest(formula = default ~ ., data = credit_train)
 rf_credit_model
 
 #
+```
+
+# Boosting
+
+**Adaboost**
+Train a decision tree where each observation is assigned an equal weight.
+Next, create a tree where the weights of the observations are changed based on:
+harder to classify: increase weight, easier to classify: lower the weight
+
+The second tree is grown on the weighted data.
+
+Our new model then becomes Tree 1 + Tree 2 and we can calculate the classification error from this new 2-tree ensemble method.
+
+We then grow a 3rd tree to predict the revised residuals.
+
+This process continues for a specified number of iterations.
+
+Gradient Boosting Machine (GBM)
+
+**GBM = Gradient Descent + Boosting**
+
+Fit an additive model (ensemble) in a forward, stage-wise manner.
+In each stage, introduce a "weak learner" (e.g. decision tree) to compensate the shortcomings of existing weak learners.
+In Adaboost, "shortcomings" are identified by high-weight data points.
+In Gradient Boosting, the "shortcomings" are identified by gradients.
+
+Adavntages:
+Often performs better than any other algorithm
+Directly optimizes cost function
+
+Disadvantages:
+Overfits (need to find a proper stopping point)
+Sensitive to extreme values and noise
+
+`gbm` function from the `gbm` package
+```{r}
+# Convert "yes" to 1, "no" to 0
+credit_train$default <- ifelse(credit_train$default == "yes", 1, 0)
+
+# Train a 10000-tree GBM model
+set.seed(1)
+gbm_credit_model <- gbm(formula = default ~ ., 
+                    distribution = "bernoulli", 
+                    data = credit_train,
+                    n.trees = 10000)
+                    
+# Print the model object                    
+print(gbm_credit_model)
+
+# summary() prints variable importance
+summary(gbm_credit_model)
+```
+
+## Understanding GBM Model Output
+
+The gbm package uses a `predict()` function to generate predictions from a model, similar to many other machine learning packages in R. When you see a function like `predict()` that works on many different types of input (a GBM model, a RF model, a GLM model, etc), that indicates that `predict()` is an "alias" for a GBM-specific version of that function. The GBM specific version of that function is `predict.gbm()`, but for convenience sake, we can just use `predict()` (either works).
+
+One thing that's particular to the `predict.gbm()` however, is that you need to specify the `number of trees` used in the prediction. There is no default, so you have to specify this manually. For now, we can use the same number of trees that we specified when training the model, which is 10,000 (though this may not be the optimal number to use).
+
+Another argument that you can specify is `type`, which is only relevant to `Bernoulli` and `Poisson` distributed outcomes. When using Bernoulli loss, the returned value is on the log odds scale by default and for Poisson, it's on the log scale. If instead you specify `type = "response"`, then gbm converts the predicted values back to the same scale as the outcome. This will convert the predicted values into probabilities for Bernoulli and expected counts for Poisson.
+
+```{r}
+# Since we converted the training response col, let's also convert the test response col
+credit_test$default <- ifelse(credit_test$default == "yes", 1, 0)
+
+# Generate predictions on the test set
+preds1 <- predict(object = gbm_credit_model, 
+                  newdata = credit_test,
+                  n.trees = 10000)
+
+# Generate predictions on the test set (scale to response)
+preds2 <- predict(object = gbm_credit_model, 
+                  newdata = credit_test,
+                  n.trees = 10000,
+                  type = "response")
+
+# Compare the range of the two sets of predictions
+range(preds1)
+range(preds2)
+```
+
+Compute test set AUC of the GBM model for the two sets of predictions. We will notice that they are the same value. That's because AUC is a rank-based metric, so changing the actual values does not change the value of the AUC.
+
+However, if we were to use a scale-aware metric like RMSE to evaluate performance, we would want to make sure we converted the predictions back to the original scale of the response.
+
+```{r}
+# Generate the test set AUCs using the two sets of preditions & compare
+auc(actual = credit_test$default, predicted = preds1)  #default
+auc(actual = credit_test$default, predicted = preds2)  #rescaled
 ```
 
