@@ -25,8 +25,10 @@ We will use recursive partitioning from the `rpart` package to train decision tr
 library(caret)
 library(gbm)
 library(ipred)
+library(Metrics)
 library(ModelMetrics)
 library(randomForest)
+library(ROCR)
 library(rpart)
 library(rpart.plot)
 library(readxl)
@@ -559,6 +561,73 @@ auc(actual = ifelse(credit_test$default == "yes", 1, 0),
     predicted = pred[,"yes"])
 ```
 
+## Random Forest Hyper Parameters
+  
+* ntree: number of trees
+* mtry: number of variables randomly sampled as candidates at each split
+* sampsize: number of samples to train on
+* nodesize: minimum size (number of samples) of the terminal nodes
+* maxnodes: maximum number of terminal nodes  
+  
+`tuneRF` is `Random Forest's` built in tuning parameter for the `mtry` hyper parameter which allows you to specify how many variables are used at each split. The `tunerf` parameter will iterate over a variety of mtry values stepwise by 2.
+
+```{r}
+# Execute the tuning process
+set.seed(1)              
+res <- tuneRF(x = subset(credit_train, select = -default),
+              y = credit_train$default,
+              ntreeTry = 500)
+               
+# Look at results
+print(res)
+
+# Find the mtry value that minimizes OOB Error
+mtry_opt <- res[,"mtry"][which.min(res[,"OOBError"])]
+print(mtry_opt)
+```
+
+If you just want to return the best RF model (rather than results) you can set `doBest = TRUE` in `tuneRF()` to return the best RF model instead of a set performance matrix.
+
+```{r}
+tuneRF(x = subset(credit_train, select = -default),
+              y = credit_train$default,
+              ntreeTry = 500,
+              doBest = TRUE)
+```
+
+Now, let's define some of the other hyper parameters we discussed earlier to tune a random forest model.
+
+```{r}
+# Establish a list of possible values for mtry, nodesize and sampsize
+mtry <- seq(4, ncol(credit_train) * 0.8, 2)
+nodesize <- seq(3, 8, 2)
+sampsize <- nrow(credit_train) * c(0.7, 0.8)
+
+# Create a data frame containing all combinations 
+hyper_grid <- expand.grid(mtry = mtry, nodesize = nodesize, sampsize = sampsize)
+
+# Create an empty vector to store OOB error values
+oob_err <- c()
+
+# Write a loop over the rows of hyper_grid to train the grid of models
+for (i in 1:nrow(hyper_grid)) {
+
+    # Train a Random Forest model
+    model <- randomForest(formula = default ~ ., 
+                          data = credit_train,
+                          mtry = hyper_grid$mtry[i],
+                          nodesize = hyper_grid$nodesize[i],
+                          sampsize = hyper_grid$sampsize[i])
+                          
+    # Store OOB error for the model                      
+    oob_err[i] <- model$err.rate[nrow(model$err.rate), "OOB"]
+}
+
+# Identify optimal set of hyperparmeters based on OOB error
+opt_i <- which.min(oob_err)
+print(hyper_grid[opt_i,])
+```
+
 # Boosting
 
 **Adaboost**
@@ -648,70 +717,133 @@ auc(actual = credit_test$default, predicted = preds1)  #default
 auc(actual = credit_test$default, predicted = preds2)  #rescaled
 ```
 
-=======
-## Random Forest Hyper Parameters
-  
-* ntree: number of trees
-* mtry: number of variables randomly sampled as candidates at each split
-* sampsize: number of samples to train on
-* nodesize: minimum size (number of samples) of the terminal nodes
-* maxnodes: maximum number of terminal nodes  
-  
-`tuneRF` is `Random Forest's` built in tuning parameter for the `mtry` hyper parameter which allows you to specify how many variables are used at each split. The `tunerf` parameter will iterate over a variety of mtry values stepwise by 2.
+# GBM Hyperparameters
+
+* n.trees: number of trees  
+* bag.fraction: proportion of observations to be sampled in each tree  
+* n.minobsinnode: minimum number of observations in the trees terminal nodes  
+* interaction.depth: maximum nodes per tree  
+* shrinkage: learning rate  
+
+**Early Stopping**
+
+Use the gbm.perf() function to estimate the optimal number of boosting iterations (aka n.trees) for a GBM model object using both OOB and CV error. When you set out to train a large number of trees in a GBM (such as 10,000) and you use a validation method to determine an earlier (smaller) number of trees, then that's called "early stopping". The term "early stopping" is not unique to GBMs, but can describe auto-tuning the number of iterations in an iterative learning algorithm.
 
 ```{r}
-# Execute the tuning process
-set.seed(1)              
-res <- tuneRF(x = subset(credit_train, select = -default),
-              y = credit_train$default,
-              ntreeTry = 500)
-               
-# Look at results
-print(res)
+# Optimal ntree estimate based on OOB
+ntree_opt_oob <- gbm.perf(object = gbm_credit_model, 
+                          method = "OOB", 
+                          oobag.curve = TRUE)
 
-# Find the mtry value that minimizes OOB Error
-mtry_opt <- res[,"mtry"][which.min(res[,"OOBError"])]
-print(mtry_opt)
+# Train a CV GBM model
+set.seed(1)
+gbm_credit_model_cv <- gbm(formula = default ~ ., 
+                       distribution = "bernoulli", 
+                       data = credit_train,
+                       n.trees = 10000,
+                       cv.folds = 2)
+
+# Optimal ntree estimate based on CV
+ntree_opt_cv <- gbm.perf(object = gbm_credit_model_cv, 
+                         method = "cv")
+ 
+# Compare the estimates                         
+print(paste0("Optimal n.trees (OOB Estimate): ", ntree_opt_oob))                         
+print(paste0("Optimal n.trees (CV Estimate): ", ntree_opt_cv))
 ```
 
-If you just want to return the best RF model (rather than results) you can set `doBest = TRUE` in `tuneRF()` to return the best RF model instead of a set performance matrix.
+Now let's compare the AUC for the models we created above using a test set. First, we'll gather predictions on the test set by utilizing the original gbm credit model we created. The first prediction set will be based on the out of bag optimized number trees while the second prediction set will utilize the cross validated number of trees optimization parameter. 
+```{r}
+# Generate predictions on the test set using ntree_opt_oob number of trees
+preds1 <- predict(object = gbm_credit_model, 
+                  newdata = credit_test,
+                  n.trees = ntree_opt_oob)
+                  
+# Generate predictions on the test set using ntree_opt_cv number of trees
+preds2 <- predict(object = gbm_credit_model, 
+                  newdata = credit_test,
+                  n.trees = ntree_opt_cv)   
+
+# Generate the test set AUCs using the two sets of preditions & compare
+auc1 <- auc(actual = credit_test$default, predicted = preds1)  #OOB
+auc2 <- auc(actual = credit_test$default, predicted = preds2)  #CV 
+
+# Compare AUC 
+print(paste0("Test set AUC (OOB): ", auc1))                         
+print(paste0("Test set AUC (CV): ", auc2))
+```
+
+# Putting it all together
+
+In this tutorial, we've learned about make predictions on classification data using tree based models including: decisionin, bagged, random forest, and gradient boosting. Let's compare the AUC for each of the models to determine which is the best. As a reminder, each model will be trained using the training data, and the predictions will be made using the test set for each model.  
 
 ```{r}
-tuneRF(x = subset(credit_train, select = -default),
-              y = credit_train$default,
-              ntreeTry = 500,
-              doBest = TRUE)
+#create the decision tree model
+credit_model <- rpart(formula = default ~ .,
+                      data = credit_train)
+
+#create decision tree predicted values
+dt_preds <- predict(object = credit_model, 
+                    newdata = credit_test)
+
+#create the bagged tree model
+bagged_credit_model <- bagging(formula = default ~ .,
+                           data = credit_train)
+
+#make predictions using bagged model on test data
+bag_preds <- predict(object = bagged_credit_model,
+                     newdata = credit_test)
+
+#create random forest model
+rf_credit_model <- randomForest(formula = default ~ ., 
+                                data = credit_train)
+
+#make predictions on test data using random forest model
+rf_preds <- predict(object = rf_credit_model,
+                    newdata = credit_test)
+
+#examine the gbm model
+gbm_credit_model$call
+
+#Use the cv optimized predictions computed in th gbm section
+gbm_preds <- preds2
+
+# Generate the test set AUCs using the two sets of predictions & compare
+actual <- credit_test$default
+dt_auc <- auc(actual = actual, predicted = dt_preds)
+bag_auc <- auc(actual = actual, predicted = bag_preds)
+rf_auc <- auc(actual = actual, predicted = rf_preds)
+gbm_auc <- auc(actual = actual, predicted = gbm_preds)
+
+# Print results
+sprintf("Decision Tree Test AUC: %.3f", dt_auc)
+sprintf("Bagged Trees Test AUC: %.3f", bag_auc)
+sprintf("Random Forest Test AUC: %.3f", rf_auc)
+sprintf("GBM Test AUC: %.3f", gbm_auc)
+
 ```
 
-Now, let's define some of the other hyper parameters we discussed earlier to tune a random forest model.
+And so it appears that the Gradient Boosting Model performs just slightly better than the Random Forest model. Perhaps if we had used a Random Forest in which we had tuned the hyper parameters, it would have performed better overall.
+
+
+We conclude this course by plotting the ROC curves for all the models (one from each chapter) on the same graph. The ROCR package provides the prediction() and performance() functions which generate the data required for plotting the ROC curve, given a set of predictions and actual (true) values.
+
+The more "up and to the left" the ROC curve of a model is, the better the model. The AUC performance metric is literally the "Area Under the ROC Curve", so the greater the area under this curve, the higher the AUC, and the better-performing the model is.
 
 ```{r}
-# Establish a list of possible values for mtry, nodesize and sampsize
-mtry <- seq(4, ncol(credit_train) * 0.8, 2)
-nodesize <- seq(3, 8, 2)
-sampsize <- nrow(credit_train) * c(0.7, 0.8)
+# List of predictions
+preds_list <- list(dt_preds, bag_preds, rf_preds, gbm_preds)
 
-# Create a data frame containing all combinations 
-hyper_grid <- expand.grid(mtry = mtry, nodesize = nodesize, sampsize = sampsize)
+# List of actual values (same for all)
+m <- length(preds_list)
+actuals_list <- rep(list(credit_test$default), m)
 
-# Create an empty vector to store OOB error values
-oob_err <- c()
-
-# Write a loop over the rows of hyper_grid to train the grid of models
-for (i in 1:nrow(hyper_grid)) {
-
-    # Train a Random Forest model
-    model <- randomForest(formula = default ~ ., 
-                          data = credit_train,
-                          mtry = hyper_grid$mtry[i],
-                          nodesize = hyper_grid$nodesize[i],
-                          sampsize = hyper_grid$sampsize[i])
-                          
-    # Store OOB error for the model                      
-    oob_err[i] <- model$err.rate[nrow(model$err.rate), "OOB"]
-}
-
-# Identify optimal set of hyperparmeters based on OOB error
-opt_i <- which.min(oob_err)
-print(hyper_grid[opt_i,])
+# Plot the ROC curves
+pred <- prediction(preds_list, actuals_list)
+rocs <- performance(pred, "tpr", "fpr")
+plot(rocs, col = as.list(1:m), main = "Test Set ROC Curves")
+legend(x = "bottomright", 
+       legend = c("Decision Tree", "Bagged Trees", "Random Forest", "GBM"),
+       fill = 1:m)
 ```
+
