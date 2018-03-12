@@ -252,10 +252,10 @@ rmse(actual = student_test$final_grade,
 
 hyperparameters for a decision tree
  
-rpart.control
-minsplit: minimum number of data points required to attempt a split
-maxdepth: depth of a decision tree
-cp: complexity parameter
+rpart.control  
+minsplit: minimum number of data points required to attempt a split  
+maxdepth: depth of a decision tree  
+cp: complexity parameter  
 
 The best sized tree is the model that contains the least error. We can visualize this via the `complexity parameter plot`.
 
