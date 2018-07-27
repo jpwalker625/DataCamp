@@ -1,10 +1,11 @@
 ---
 title: "Unsupervised Learning"
-output: html_notebook
+output:
+  html_document: default
+  html_notebook: default
 ---
 ```{r setup}
 library(tidyverse)
-
 ```
 
 # Part 1)
@@ -134,7 +135,7 @@ In the following example we'll using the pokemon data set available from kaggle
 https://www.kaggle.com/abcsds/pokemon
 
 ```{r kmeans using pokemon data set}
-pokemon <- read.csv("Pokemon.csv")
+pokemon <- read.csv("data/Pokemon.csv")
   
 colnames(pokemon)
 #only select columns of interest
@@ -399,7 +400,7 @@ You saw in the last chapter that it's important to check if the data need to be 
 
 The input variables use different units of measurement.
 The input variables have significantly different variances.
-```{r PCA}
+```{r More PCA}
 # Check column means and standard deviations
 round(colMeans(wisc.data), 2 )
 
