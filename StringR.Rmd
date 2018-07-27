@@ -203,7 +203,16 @@ abb_names <- print(str_c(first_initials, ". ", names_split[, 2]))
 
 # Regular Expressions
 
+```{r}
+data(package = "qdap")
+library(qdap)
+View(raj)
+```
+
+
 In this section I'll dive into **regular expressions** which are a language for describing patterns in strings.
+
+**devtools neiss**
 
 The `rebus` package is useful for building regular expressions in a human readable way. 
 
@@ -211,4 +220,32 @@ The `rebus` package is useful for building regular expressions in a human readab
 str_view(string = fruit, pattern = "ban")
 ```
 
+
+START
+END
+ANY_CHAR
+
+
+Alternation
+or
+```{r}
+or("ba", "ap")
+```
+
+
+character classes
+char_class 
+negated_char_class
+
+str_view_all
+```{r}
+vowels <- char_class("aAeEiIoOuU")
+r
+```
+
+
+ranges using a dash
+DGT for any digit, equivalent to char_class("0-9")
+Word for a wor character equivalent to char_class("a-zA-z0-9_")
+SPC for whitespace character
 
