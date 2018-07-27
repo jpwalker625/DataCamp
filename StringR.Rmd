@@ -1,0 +1,214 @@
+---
+title: "String Manipulation with Stringr"
+author: "Joseph Walker"
+
+output:
+  prettydoc::html_pretty:
+    theme: tactile
+    
+    
+---
+
+# Introduction to `stringr`
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(prettydoc)
+```
+
+In this tutorial we'll be diving into the `stringr` package to learn useful functions for dealing with strings. Stringr is part of the `tidyverse` so we don't have to load the package explicitly.
+
+```{r}
+library(tidyverse)
+```
+
+The majority of functions in the `stringr` start with `str_`. In most cases, `string = `, and `pattern = ` arguments are part of the functions.
+
+### String Concatenate
+
+First, let's begin by combining strings using the concatenate function `str_c`. It acts similar to the paste function but has two major differences:
+
+1) The default separator is `sep = ""` rather than a space, so it acts more like paste0  
+2) Missing values are propagated rather than converted to "NAs"
+
+Here are a few examples:
+
+```{r}
+#create my_fruit
+my_fruit <- print(c("bananas and", "strawberries and", NA))
+
+#create my_fruit_and using paste
+my_fruit_and <- print(paste(my_fruit, c("peanut butter", "chocolate", "")))
+```
+
+Now with `str_c`:
+
+```{r}
+my_fruit_str <- print(str_c(my_fruit, c("peanut butter", "chocolate", "")))
+```
+
+In the case of `paste`, the NA is combined with 'and' and converted into a character string.And also, the default separation is a space. However the `str_c` case treats NA as a missing value and does not combine it with 'and', rather it returns the third string as a missing value or `NA`. Instead of defulting to a space, it defaults to "".
+
+```{r}
+paste(my_fruit_and, collapse = ", ")
+
+str_c(my_fruit_str, collapse = ", ")
+```
+
+Again, in th case of `paste`, we're collapsing the three strings into one separating with commas. 'Na and' is treated as a string. But the `str_c` version tries to collapse two strings and a missing value and is replaced with a single missing value: `NA`.
+
+### Substrings
+
+Another useful function is `str_sub` which is useful for extracting and replacing substrings in a character vector. Its arguments include `start` and `end` so the string is extracted in an element wise fashion.
+
+```{r}
+jw <- "Joseph Walker"
+
+#subset first name
+str_sub(jw, start = 1, end = 6)
+
+#separate out first and last name
+str_sub(string = jw, start = c(1, 8), end = c(6, 13))
+
+#replace first name with abbreviation
+str_sub(jw, 1,6) <- "J."
+
+#print jw
+jw
+```
+
+**In the following examples, I'll use the `fruit` dataset included in the `stringr` package.**
+
+```{r}
+glimpse(fruit)
+```
+
+### String Subset
+
+Detecting strings with a pattern and then subsetting those string is a common task. One way to do this would be to use `str_detect` which returns a logical vector then use that vector to subset the original vector
+
+```{r}
+rr_fruit <- str_detect(string = fruit, pattern = "rr")
+
+rr_fruit
+
+fruit[rr_fruit]
+```
+
+Instead of this roundabout way, we can use the `str_subset` function which does this automatically.
+
+```{r}
+str_subset(string = fruit, pattern = "rr")
+```
+
+Similarly, we can use `str_which` to return the indices for each string in which the pattern is matched.
+
+```{r}
+str_which(string = fruit, pattern = "rr")
+```
+
+### String Count
+
+Another useful function is `str_count` which counts the number of occurrences of the pattern in each string. Let's take a look.
+
+```{r}
+#count number of 'r's in each string
+number_rs <-str_count(string = fruit, pattern = "r")
+
+number_rs
+
+#return fruit containing 3 or more 'r's
+fruit[number_rs >= 3]
+```
+
+
+Now let's switch gears and explore string splitting. For the following examples, I'll make a vector of cities and countries in which we'll practice splitting.
+
+Some important arguments to know before we dive in. The `simplify = TRUE` argument allows us to split each string into equal parts as a matrix. The `n = ` argument specifies how many columns we want.
+
+```{r}
+places <- c("San Francisco, USA", "Vienna, Austria", "Tokyo, Japan", "Lima, Peru")
+
+#split the string places into cities and countries
+str_split(string = places, pattern = ", ")
+
+#split the string using simplify = TRUE
+places_split <- print(str_split(string = places, pattern = ", ", simplify = T))
+
+#subset the cities into a vector
+cities <- print(places_split[, 1])
+
+#subset the countries into a vector
+countries <- print(places_split[, 2])
+```
+
+Here's another example using some made up dates:
+```{r}
+dates <- c("17.03.1977 - 23.09.2003", "31.10.1984 - 04.07.1999")
+
+#split dates into start and end dates
+split_dates <- print(str_split(dates, pattern = " - ", simplify = T))
+
+#split start dates into month, day, year
+str_split(split_dates[, 1], ".")
+```
+
+Splitting by the pattern `.` doesn't return what we want. In this case we need to use the `fixed()` argument.
+
+```{r}
+str_split(split_dates[, 1], fixed("."), simplify = T)
+```
+
+Okay now let's have some fun by combining what we've learned with other functions. In this example, I'm going to use a subset of the `sentences` dataset from `stringr`. I want to break each sentence up into individual words and count the number of words per line. Finally, I'll calculate the average word length per line. Let's go!
+
+```{r}
+#set seed for reproducibility
+set.seed(12)
+
+#take 10 random sentences from the dataset
+sentences_subset <- print(sample(x = sentences, size = 10))
+
+#remove periods
+sentences_subset <- print(str_replace(string = sentences_subset, pattern = fixed("."), replacement = ""))
+
+#split the sentences into words
+words <- print(str_split(string = sentences_subset, pattern = " "))
+
+#use map from purrr package to count words in each sentence
+map_dbl(.x = words, .f = length )
+
+#use map to count characters in each sentence
+word_lengths <- print(map(.x = words, .f = str_length))
+
+#calculate avergage word length in each sentence
+map_dbl(word_lengths, mean)
+```
+
+Here's one more example of how powerful combining these operations can be. In this example, I'll convert a vector of names into abbreviated names.
+
+```{r}
+names <- c("Jon Snow", "Aria Stark", "Cirsei Lannister", "Theon Greyjoy", "Stannis Baratheon")
+
+#separate first and last names
+names_split <- str_split(names, " ", simplify =  T)
+
+#get first letter from each first name  
+first_initials <- str_sub(names_split[ ,1], start = 1, end = 1)
+
+#combine first initial, ., and last name
+abb_names <- print(str_c(first_initials, ". ", names_split[, 2]))
+
+```
+
+---
+
+# Regular Expressions
+
+In this section I'll dive into **regular expressions** which are a language for describing patterns in strings.
+
+The `rebus` package is useful for building regular expressions in a human readable way. 
+
+```{r}
+str_view(string = fruit, pattern = "ban")
+```
+
+
