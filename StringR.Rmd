@@ -203,49 +203,72 @@ abb_names <- print(str_c(first_initials, ". ", names_split[, 2]))
 
 # Regular Expressions
 
-```{r}
-data(package = "qdap")
-library(qdap)
-View(raj)
-```
 
+In this section I'll dive into **regular expressions** which are a language for describing patterns in strings. Rather than using the tradiitional characters and symbols you may have seen before, I'll be introducing the `rebus` package which provides regular expressions in a human readable format.  
 
-In this section I'll dive into **regular expressions** which are a language for describing patterns in strings.
-
-**devtools neiss**
-
-The `rebus` package is useful for building regular expressions in a human readable way. 
+In the following examples, we'll use data from **NEISS**, the **National Electronic Injury Surveillance System**. This data comes from the `neiss` package available using : `devtools::install_github("hadley/neiss")`. We'll be looking specifically at the narratives variable which contains information about the person and injury of each incident. 
 
 ```{r}
-str_view(string = fruit, pattern = "ban")
+library(rebus) #human readable regular expressions
+library(neiss) #for the injuries dataset
+
+#examine the injury dataset from the neiss package
+glimpse(injuries)
+
+#set seed for reproducibility
+set.seed(968)
+
+#assign essay variable as character vector
+narrative <- injuries %>% filter(!is.na(narrative)) %>%
+  sample_n(size = 50) %>%
+  select(narrative) %>%
+  pull() %>%
+  str_to_lower()
 ```
 
-
-START
-END
-ANY_CHAR
+Before we dive into the regex expressions, one useful `stringr` function worth knowing is `str_view`. This function returns the highlighted strings that match the pattern indicated. An optional argument `match = TRUE` allows you to specify whether or not you want to return all of or only the matching strings. 
 
 
-Alternation
-or
+Let's see which naarative mention **"fell"**.
+
 ```{r}
-or("ba", "ap")
+str_view(string = narrative, pattern = "fell", match = T)
 ```
 
+`str_view` is lazy and returns the first instance of the matched pattern in a string. If we want to see all occurrences of a pattern in a string we can use `str_view_all`. 
 
-character classes
-char_class 
-negated_char_class
+Now it's time to get into some regular expressions. There's a vast pool of expressions that can be used individually or in combination. They're pretty easy to get the hang of but the one thing you have to know is the function `%R%`. This acts like a concatenation which combines expressions together and reads like "and then". It'll make more sense when you see some examples so let's get to it.
 
-str_view_all
+In the first example, I want to extract the age and sex of each person.
+
 ```{r}
-vowels <- char_class("aAeEiIoOuU")
-r
+#create pattern to be used with string
+pattern <- DGT %R%
+           optional(DGT) %R%
+           optional(SPC) %R%
+           or("y", "m") %R%
+           optional("o") %R%
+           optional(SPC) %R%
+           or("m", "f")
+
+str_view(string = head(narrative, 5), 
+         pattern = pattern)
 ```
 
+We can take this one step further using `capture`. This allows us to pull out specific portions of an expression that you might need to change or do something with. It is similar to the `simplify = TRUE` argument of the `str_split` function we used earlier.
 
-ranges using a dash
-DGT for any digit, equivalent to char_class("0-9")
-Word for a wor character equivalent to char_class("a-zA-z0-9_")
-SPC for whitespace character
+```{r}
+age_sex <- str_match(string = head(narrative, 10),
+          pattern = capture(DGT %R%
+           optional(DGT)) %R%
+           optional(SPC) %R%
+           capture(or("y", "m")) %R%
+           optional("o") %R%
+           optional(SPC) %R%
+           capture(or("m", "f")))
+
+data.frame(age = age_sex[, 2], unit = age_sex[, 3], sex = age_sex[, 4])
+```
+
+Pretty Cool Stuff.
 
