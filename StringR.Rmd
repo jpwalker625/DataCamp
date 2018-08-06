@@ -76,7 +76,7 @@ str_sub(jw, 1,6) <- "J."
 jw
 ```
 
-**In the following examples, I'll use the `fruit` dataset included in the `stringr` package.**
+Let's have a look at the `fruit` dataset included in the `stringr` package that we'll be using for the next few examples.
 
 ```{r}
 glimpse(fruit)
@@ -84,17 +84,20 @@ glimpse(fruit)
 
 ### String Subset
 
-Detecting strings with a pattern and then subsetting those string is a common task. One way to do this would be to use `str_detect` which returns a logical vector then use that vector to subset the original vector
+Detecting strings with a pattern and then subsetting those strings is a common task. One way to do this would be to use `str_detect` which returns a logical vector then use that vector to subset the original vector.
 
 ```{r}
+#create logical vector detecting presence of 'rr'
 rr_fruit <- str_detect(string = fruit, pattern = "rr")
 
+#examine the vector
 rr_fruit
 
+#subset the fruit that have 'rr'
 fruit[rr_fruit]
 ```
 
-Instead of this roundabout way, we can use the `str_subset` function which does this automatically.
+Another way to do this is with the `str_subset` function which performs the detection and subsetting succinctly.
 
 ```{r}
 str_subset(string = fruit, pattern = "rr")
@@ -112,8 +115,9 @@ Another useful function is `str_count` which counts the number of occurrences of
 
 ```{r}
 #count number of 'r's in each string
-number_rs <-str_count(string = fruit, pattern = "r")
+number_rs <- str_count(string = fruit, pattern = "r")
 
+#print the vector
 number_rs
 
 #return fruit containing 3 or more 'r's
@@ -218,13 +222,15 @@ glimpse(injuries)
 #set seed for reproducibility
 set.seed(968)
 
-#assign essay variable as character vector
+#sample the dataset
 narrative <- injuries %>% filter(!is.na(narrative)) %>%
   sample_n(size = 50) %>%
   select(narrative) %>%
   pull() %>%
   str_to_lower()
 ```
+
+### String View
 
 Before we dive into the regex expressions, one useful `stringr` function worth knowing is `str_view`. This function returns the highlighted strings that match the pattern indicated. An optional argument `match = TRUE` allows you to specify whether or not you want to return all of or only the matching strings. 
 
@@ -236,6 +242,8 @@ str_view(string = narrative, pattern = "fell", match = T)
 ```
 
 `str_view` is lazy and returns the first instance of the matched pattern in a string. If we want to see all occurrences of a pattern in a string we can use `str_view_all`. 
+
+### Rebus Expressions
 
 Now it's time to get into some regular expressions. There's a vast pool of expressions that can be used individually or in combination. They're pretty easy to get the hang of but the one thing you have to know is the function `%R%`. This acts like a concatenation which combines expressions together and reads like "and then". It'll make more sense when you see some examples so let's get to it.
 
@@ -255,6 +263,8 @@ str_view(string = head(narrative, 5),
          pattern = pattern)
 ```
 
+### Capture
+
 We can take this one step further using `capture`. This allows us to pull out specific portions of an expression that you might need to change or do something with. It is similar to the `simplify = TRUE` argument of the `str_split` function we used earlier.
 
 ```{r}
@@ -270,5 +280,27 @@ age_sex <- str_match(string = head(narrative, 10),
 data.frame(age = age_sex[, 2], unit = age_sex[, 3], sex = age_sex[, 4])
 ```
 
-Pretty Cool Stuff.
+### Back Reference
+
+Referring to a captured part of a pattern is known as a **backreference**. It is useful for finding repeated patterns or words in strings. The `rebus` expression for back referencing is `REF1`. The `capture` function keeps track of how many strings there are and so the number can be specified to back reference a specific captured string, eg. (REF1, REF2, REF3... REF9). Let's see this in practice.
+
+In this first example we'll use the `words` vector to count how many words there are for a specific repeated letter sequence.
+
+```{r}
+#create pattern to capture repeating letters
+pattern <- capture(ANY_CHAR) %R% REF1
+
+#examine the words with repeating letters
+str_subset(words, pattern, match = T)
+
+#extract the repeating letters from each word and create table
+table(str_extract(string = words, pattern = pattern))
+```
+
+Back referencing is especially useful in cases where we want to replace a string using pattern matching.
+
+```{r}
+
+```
+
 
