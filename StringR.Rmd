@@ -1,21 +1,20 @@
 ---
-title: "String Manipulation with Stringr"
-author: "Joseph Walker"
+title: String Manipulation with Stringr and Rebus
+author: databeta.org
 
 output:
   prettydoc::html_pretty:
     theme: tactile
-    
-    
 ---
 
-# Introduction to `stringr`
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, warning = F, message = T)
 library(prettydoc)
 ```
 
-In this tutorial we'll be diving into the `stringr` package to learn useful functions for dealing with strings. Stringr is part of the `tidyverse` so we don't have to load the package explicitly.
+**In this tutorial we'll be exploring strings, patterns, and regular expressions to deal with text or character class data.**
+
+Let's start off wit the `stringr` package to learn useful functions for dealing with strings. Stringr is part of the `tidyverse` so we don't have to load the package explicitly.
 
 ```{r}
 library(tidyverse)
@@ -208,7 +207,7 @@ abb_names <- print(str_c(first_initials, ". ", names_split[, 2]))
 # Regular Expressions
 
 
-In this section I'll dive into **regular expressions** which are a language for describing patterns in strings. Rather than using the tradiitional characters and symbols you may have seen before, I'll be introducing the `rebus` package which provides regular expressions in a human readable format.  
+In this section I'll dive into **regular expressions** which are a language for describing patterns in strings. Rather than using the traditional regex syntax, I'll be introducing the `rebus` package which provides regular expressions in a human readable format.  
 
 In the following examples, we'll use data from **NEISS**, the **National Electronic Injury Surveillance System**. This data comes from the `neiss` package available using : `devtools::install_github("hadley/neiss")`. We'll be looking specifically at the narratives variable which contains information about the person and injury of each incident. 
 
@@ -284,23 +283,42 @@ data.frame(age = age_sex[, 2], unit = age_sex[, 3], sex = age_sex[, 4])
 
 Referring to a captured part of a pattern is known as a **backreference**. It is useful for finding repeated patterns or words in strings. The `rebus` expression for back referencing is `REF1`. The `capture` function keeps track of how many strings there are and so the number can be specified to back reference a specific captured string, eg. (REF1, REF2, REF3... REF9). Let's see this in practice.
 
-In this first example we'll use the `words` vector to count how many words there are for a specific repeated letter sequence.
+In this first example we'll use the `words` vector (from `stringr`) to count how many words there are for a specific repeated letter sequence.
 
 ```{r}
+#load word vector
+data("words")
+
 #create pattern to capture repeating letters
 pattern <- capture(ANY_CHAR) %R% REF1
 
 #examine the words with repeating letters
-str_subset(words, pattern, match = T)
+str_subset(words, pattern)
 
 #extract the repeating letters from each word and create table
 table(str_extract(string = words, pattern = pattern))
 ```
 
-Back referencing is especially useful in cases where we want to replace a string using pattern matching.
+Back referencing can be useful in cases where we want to modify or replace a string using pattern matching. Using `str_replace`, we can specify the capture group(s) in the pattern and use the backreference(s) in the replacement.
 
+Remember the names vector? Let's add some middle initials to them.
 ```{r}
+#setup pattern for capturing first and last names
+name_pattern <- capture(one_or_more(WRD)) %R% SPC %R% capture(one_or_more(WRD))
 
+#examine names and make sure our pattern works
+str_view(names, name_pattern)
+
+#create vector of middle initials
+middle_initials <- c("J.", "P.", "M.", "D.", "K.")
+
+#add middle initial to names
+str_replace(string = names, pattern = name_pattern, replacement = str_c(REF1, middle_initials, REF2, sep = " "))
 ```
 
+As you can see, regular expressions can be very powerful when working with strings. The human readable expressions that the `rebus` package offers makes this process much easier and also allows you to become more familiar with the traditional regex syntax should you wish to learn it. 
+  
+I hope you've enjoyed this tutorial. Comments? Questions? Anything else you'd like to see? [Let me know!](mailto:jpwalker625@gmail.com)
 
+Thanks for reading!  
+-Joe
