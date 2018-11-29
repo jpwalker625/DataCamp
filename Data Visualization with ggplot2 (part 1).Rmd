@@ -12,22 +12,26 @@ library(tidyverse)
 
 ```
 
-#Part 1
+**This is the first of a three part series on data visualization using the popular `ggplot2` package.**
 
-Data Visualization combines Statistics and Design to present data in meaningful ways. Good design aids in both the understanding and communication of results. 
+
+# Part 1
+
+Data Visualization combines statistics and design to present data in meaningful ways. Good design aids in both the understanding and communication of results. 
 
 **Exploratory Visualizations** are meant to confirm and analyze. They are often data heavy, easy to generate, and intended for a small, specialist audience.
 
-**Explanatory Visualizations** are mean to inform and persuade. They are labor intensive, data specific, and intended for a broader audience such as publications or presentations.
+**Explanatory Visualizations** are meant to inform and persuade. They are labor intensive, data specific, and intended for a broader audience such as publications or presentations.
 
 ## The Grammar of Graphics
 
-GGPLOT2's functionality relies on the grammar of graphics which has 2 principles: 
+ggplot2's functionality relies on the grammar of graphics which has 2 principles: 
+ 
 * Graphics are distinct layers of grammatical elements 
 * Meaningful plots through aesthetic mapping 
 
-The essential grammatical elements are:
-
+The essential grammatical elements are: 
+ 
 * Data - The dataset being plotted
 * Aesthetics - The scales onto which we map our data
 * Geometries - The visual elements used for our data
@@ -39,14 +43,14 @@ Other elements include:
 * Coordinates 
 * Themes 
 
-### Aesthetics 
+## Aesthetics 
 
-With GGPLOT2, plots become objects which can be recycled and manipulated by adding on layers and arguments.
-
+With ggplot2, plots become objects which can be recycled and manipulated by adding on layers and arguments. 
+ 
 Aesthetics are mapped onto the plot using existing data. 
-
+ 
 Common aesthetics include: 
-
+ 
 * x 
 * y 
 * color 
@@ -108,7 +112,7 @@ p + geom_point(alpha = 0.6, shape = 18, size = 3, color = "red")
 ### Overplotting
 
 Often is this case that you will have to deal with overplotting:
-
+ 
 * Large datasets 
 * Imprecise data and so points are not clearly separated on your plot 
 * Interval data (i.e. data appears at fixed values) 
@@ -199,7 +203,7 @@ ggplot(ChickWeight, aes(weight, color = Diet))+
 ```
 
 Another use of bars is the `geom_bar` used for bar plots. It has a `position` argument that can take on three arguments:
-
+ 
 * stack (the default position)
 * fill
 * dodge
@@ -299,4 +303,4 @@ p + geom_line(lineend = "round", alpha = 0.6, size = 2)
 p + geom_line(linetype = 5, arrow = arrow(angle = 20, ends = "last", type = "closed"))
 ```
 
-
+```

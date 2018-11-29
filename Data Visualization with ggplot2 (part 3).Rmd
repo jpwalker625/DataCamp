@@ -7,10 +7,10 @@ output:
   pdf_document: default
 ---
 
-```{r setup, include=FALSE}
+```{r setup, warning=FALSE, message=FALSE}
 knitr::opts_chunk$set(echo = T, warning = F, message = F)
 
-#load required libraries
+# load required packages
 library(forcats)
 library(geomnet)
 library(ggfortify)
@@ -21,7 +21,7 @@ library(stringr)
 library(tidyverse)
 ```
 
-# Part 3
+## Part 3
 
 In **part 1** of this series, we explored the fundamentals of `ggplot2`. We learned about the **grammar of graphics** beginning with **data, aesthetics, and geometries.** 
 
@@ -34,7 +34,7 @@ In this final chapter, we will explore plots intended for a specialty audience. 
 
 There are two common types of plots presented to an academic audience: Box plots and Density plots.
 
-###Box Plots
+### Box Plots
 
 Box plots were first described by John Tukey in 1977 in his classic text, 'Exploratory Data Analysis'. The Box Plot gives us what Tukey describes as the 5 number summary:
 
@@ -46,32 +46,33 @@ Box plots were first described by John Tukey in 1977 in his classic text, 'Explo
 
 This is advantageous over using the mean and standard deviation for data sets that may not be normally distributed and prone to extreme outliers. 
 
-The inner quartile range is the difference between the 3rd and 1st quartiles, or what we commonly see as the box in a box plot.
+The **inner quartile range** is the difference between the 3rd and 1st quartiles, or what we commonly see as the box in a box plot.
 
 The following examples use the `movies` dataset from the `ggplot2movies` package.
 
 ```{r}
+# examine the dataset
 str(movies)
 
-#gather the movie genre into one column
+# gather the movie genre into one column
 movies <- movies %>% gather(key = 'genre', value = 'value', -c(1:17))
 
-#convert mpaa to factor
+# convert mpaa to factor
 movies$mpaa <- as_factor(movies$mpaa)
 
-#relabel movies not rated with 'N/A'
+# relabel movies not rated with 'N/A'
 movies$mpaa <- fct_recode(movies$mpaa, 'N/A' = "")
 
-#set seed for reprducibility
+# set seed for reprducibility
 set.seed(123)
 
-#sample the movies dataset
+# sample the movies dataset
 movie_sample <- movies[sample(nrow(movies), 10001), ]
 
-#factor the ratings variable and round to the nearest whole number
+# factor the ratings variable and round to the nearest whole number
 movie_sample$rating <- factor(round(movie_sample$rating))
 
-#create a boxplot object
+# create a boxplot object
 p <- ggplot(movie_sample, aes(x = rating, y = votes, group = rating)) +
   geom_point() +
   geom_boxplot() +
@@ -80,17 +81,17 @@ p <- ggplot(movie_sample, aes(x = rating, y = votes, group = rating)) +
                width = 0.2,
                col = "red")
 
-#boxplot
+# boxplot
 p
 ```
 
 There is a large number of votes for rating. We will need to make some transformations on the data. Be careful as the tranformation will occur differently depending on how you call your stat functions and arguments.
 
 ```{r}
-#transformation happens before statistics are calculated
+# transformation happens before statistics are calculated
 p + scale_y_log10()  
 
-#transformation happens after the statistics are calculated
+# transformation happens after the statistics are calculated
 p + coord_trans(y = "log10")
 ```
 
@@ -101,22 +102,22 @@ It is possible to cut up continuous variables into ordinal variables using the f
 `cut_width(x, width)` makes groups of width width from vector x.  
 
 ```{r}
-#create plot object from movies sample dataset
+# create plot object from movies sample dataset
 p <- ggplot(movie_sample, aes(x = year, y = budget)) + scale_y_log10(labels = scales::dollar)
 
-#examine the plot
+# examine the plot
 p + geom_point()
 
-#use cut_interval to divide year into  sections with equal range
+# use cut_interval to divide year into  sections with equal range
 #every 25 years or so
 p + geom_boxplot(aes(group = cut_interval(year, n = 5)))
 
-#use cut_number function to divide year into groups with approximately equal number of observations
-#reveals that we do not have budget records for the early part of the 20th century
+# use cut_number function to divide year into groups with approximately equal number of observations
+# reveals that we do not have budget records for the early part of the 20th century
 p + geom_boxplot(aes(group = cut_number(year, n = 5)))
 
-#use cut_width to make group of specified width
-#i.e. decades
+# use cut_width to make group of specified width
+# .e. decades
 p + geom_boxplot(aes(group = cut_width(year, width = 10)))
 
 ```
@@ -124,13 +125,11 @@ p + geom_boxplot(aes(group = cut_width(year, width = 10)))
 One drawback of the box plot visualization is that you don't have any indication of the sample size for each group. One way of showing this variation is to use the `varwidth` argument.
 
 ```{r}
-#create plot object using movie_sample dataset
+# create plot object using movie_sample dataset
 p <- ggplot(movie_sample, aes(x = mpaa, y= budget)) + scale_y_log10(labels = scales::dollar)
 
-#view plot object with boxplot and adjust the widths of the boxes based on the sample size
+# view plot object with boxplot and adjust the widths of the boxes based on the sample size
 p + geom_boxplot(varwidth = T)
-
-
 ```
 
 And just so we can confirm this argument is doing what we expect it to, we can check the math manually.
@@ -146,7 +145,7 @@ movie_sample %>%
 
 Theoretical density plots use the probability density function (PDF) to plot the distribution of univariate data. You have certainly seen these types of plots before. They include: normal, t, chi-squared, and F distributions. 
 
-Emprical density plots use real data using the Kernal Density Estimate.
+Empirical density plots use real data using the Kernal Density Estimate.
 
 The KDE is defined as:
 
@@ -156,23 +155,53 @@ The KDE calculates a normal distribution for each value in the data. These are k
 
 To obtain the true density curve, we simply add up all the y-values for each bump along our x-axis.
 
+The following examples use the `quakes` data from the base r datasets packag. We will be examining the distribution of the magnitudes of quakes measured near Fiji since 1964.
 ```{r}
+# examine the density of the magnitudes
+(d <- density(quakes$mag))
 
+# calculate the mode of the density distribution of quake magnitudes
+(mode <- d$x[which.max(d$y)])
+
+# visualize the desnity distribution
+ggplot(quakes, aes(x = mag)) +
+  geom_rug() +
+  geom_density() +
+  geom_vline(xintercept = mode, col = "red")
 ```
 
 There are three parameters that you may be tempted to adjust in a density plot:
 
-bw - the smoothing bandwidth to be used, see ?density for details
-adjust - adjustment of the bandwidth, see density for details
-kernel - kernel used for density estimation, defined as
-"g" = gaussian
-"r" = rectangular
-"t" = triangular
-"e" = epanechnikov
-"b" = biweight
-"c" = cosine
-"o" = optcosine
+- bw - the smoothing bandwidth to be used, see ?density for details  
+- adjust - adjustment of the bandwidth, see density for details 
+- kernel - kernel used for density estimation, defined as: 
 
+* "g" = gaussian 
+* "r" = rectangular 
+* "t" = triangular 
+* "e" = epanechnikov 
+* "b" = biweight 
+* "c" = cosine 
+* "o" = optcosine
+
+```{r}
+# first lets get the bandwidth
+(get_bw <- d$bw)
+
+# create default plotting object
+p <- ggplot(quakes, aes(x = mag)) +
+  geom_rug()
+
+# basic density plot
+p + geom_density()
+
+# adjust the bandwidth 2 different ways
+p + geom_density(bw = 0.25 * get_bw, color = 'red')
+p +  geom_density(adjust = 0.25)
+
+# adjust the kernel
+p + geom_density(kernel = "r")
+```
 
 ## Plots for Specific Data Types
 
@@ -186,7 +215,7 @@ Base R provides a quick and dirty function, `pairs()` that will output a scatter
 pairs(iris[1:4])
 ```
 
-This can also be done in ggplot2
+This can also be done in `ggplot2`
 
 ```{r}
 cor_list <- function(x) {
@@ -233,19 +262,19 @@ You could visualize this type of data with a stacked bar plot, but the ternary p
 
 The following example uses the `USDA` data set, providing textural classification data of land samples.
 ```{r}
-#load dataset from the ggtern package
+# load dataset from the ggtern package
 data("USDA")
 
-#examine the USDA data set
+# examine the USDA data set
 str(USDA)
 
 # create ID column
 USDA$ID <- row.names(USDA)
 
-#tidy USDA to long format
+# tidy USDA to long format
 USDA_long <- gather(USDA, key, value, -c(Label, ID))
 
-#create stacked bar plot to depict data
+# create stacked bar plot to depict data
 ggplot(USDA_long, aes(x = ID, y = value, fill = key))+
   geom_col() +
   coord_flip()
@@ -274,10 +303,10 @@ ggtern(data=DATA,aes(x,y,z,xend=xend,yend=yend,zend=zend)) +
 And with the USDA soil dataset,
 
 ```{r}
-#create ternary diagram plot object
+# create ternary diagram plot object
 p <- ggtern(USDA, aes(x = Sand, y = Silt, z = Clay))
 
-#plot points on ternary plot
+# plot points on ternary plot
 p + geom_point() 
 ```
 
@@ -302,11 +331,11 @@ The following examples use the `madmen` dataset from the geomnet library.
 ```{r}
 str(madmen)
 
-#merge the edges and vertices datasets
+# merge the edges and vertices datasets
 mmnet <- full_join(madmen$edges, madmen$vertices, by = c('Name1' = 'label'))
 
 
-#plot the relationship
+# plot the relationship
 ggplot(mmnet, aes(from_id = Name1, to_id = Name2, col = Gender )) +
   geom_net(labelon = T, 
            size = 6, 
@@ -327,13 +356,13 @@ Can be used to assess how well the fit of a model is. The base R function `plot`
 Here's an examples using the `trees` dataset from the `stats` package (default package loaded on startup).
 
 ```{r}
-#examine the trees dataset
+# examine the trees dataset
 str(trees)
 
-#create a linear model object
+# create a linear model object
 res <- lm(Volume ~ Girth, data = trees)
 
-#display diagnostic plots of the model
+# display diagnostic plots of the model
 plot(res)
 
 ```
@@ -347,7 +376,7 @@ autoplot(res, ncol = 2)
 Autoplot works with time series as well!
 
 ```{r}
-#examine the EUStockMarkets timeseires dataset
+# examine the EUStockMarkets timeseires dataset
 str(EuStockMarkets)
 
 autoplot(datasets::EuStockMarkets)
@@ -358,7 +387,7 @@ autoplot(datasets::EuStockMarkets)
 The cmdscale() function from the stats package performs Classical Multi-Dimensional Scaling and returns point coodinates as a matrix. Although autoplot() will work on this object, it will produce a heatmap, and not a scatter plot. However, if either eig = TRUE, add = TRUE or x.ret = TRUE is specified, cmdscale() will return a list instead of matrix. In these cases, the list method for autoplot() in the ggfortify package can deal with the output.
 
 ```{r}
-#examine the eurodist dataset
+# examine the eurodist dataset
 str(eurodist)
 
 # Autoplot + ggplot2 tweaking
@@ -407,12 +436,13 @@ The available maps of political boundaries are:
 The maps can be accessed via `map_data()` from the  `ggplot2` package, which converts the map into a data frame containing the variables long and lat. To draw the map, you need to use `geom_polygon()` which will connect the points of latitude and longitude for you.
 
 ```{r}
-#create map object using the map_data function
+# create map object using the map_data function
 state <- map_data(map = "state")
-#examine usa data
+
+# examine usa data
 str(state)
 
-# Build the map
+# build the map
 ggplot(state, aes(x = long, y = lat, group = group)) +
   geom_polygon(color = "white") +
   coord_map() +
@@ -422,22 +452,22 @@ ggplot(state, aes(x = long, y = lat, group = group)) +
 Let's add some information to our map. We will use the `us.cities` dataset from the `maps` package
 
 ```{r}
-#load require package
+# load require package
 library(maps)
 
-#exmaine the dataset
+# exmaine the dataset
 str(us.cities)
 
-#Filter out Alaska and Hawaii
+# filter out Alaska and Hawaii
 us.cities <- us.cities %>% filter(!country.etc %in% c('HI', 'AK'))
 
-#Build the map with data from the us.cities dataframe
+# build the map with data from the us.cities dataframe
 p <- ggplot(state, aes(x = long, y = lat, group = group)) +
   geom_polygon(color = 'black', fill = 'grey90') +
   coord_map() +
   theme_void()
 
-#Diaplay map with city pop info as points  
+# display map with city pop info as points  
 p + geom_point(data = us.cities, 
              aes(group = country.etc, col = pop),
              size = 1.2, alpha = 0.5) +
@@ -451,25 +481,25 @@ Topographical and/or Photographic Maps
 Using the `ggmap`[^1] package, we can use the `get_map()` function to access various maps, such as those offered by google. The only essential argument is `location`, however, there are many other options which you can specify.
 
 ```{r}
-#load required package
+# load required package
 library(ggmap)
 
-houston <- get_map(location = "Houston, Texas", source = "stamen", maptype = "toner")
+houston <- get_map(location = "San Francisco, CA", source = "stamen", maptype = "toner")
 
-#plot location using ggmap
+# plot location using ggmap
 ggmap(houston)
 ```
 
 Similar to choropleths, we can map points onto a cartographic map. Using the houston map from above, we can map the `crime` dataset from the `ggmap` package which include Houston related crimes between Jan 2010 to August 2010.
 
 ```{r}
-#load required package
+# load required package
 library(ggthemes) #for map theme
 
-#examine the crime dataset
+# examine the crime dataset
 str(crime)
 
-#map the crime statistics colored by offense
+# map the crime statistics colored by offense
 ggmap(houston) +
   geom_point(data = crime, aes(col = offense), size = 1, alpha = 0.4)+
   theme_void()
@@ -478,21 +508,21 @@ ggmap(houston) +
 Not bad! `ggmap` even has functions which allow you to *geocode* locations by pulling the information from the internet (google).
 
 ```{r}
-#examine the sites around houston we are interested in
+# examine the sites around houston we are interested in
 houston_sites <- c("Houston Zoo, Houston", "Space Center, Houston", "Minute Maid Park, Houston", "George Bush Intercontinental Airport, Houston")
 
-#geocode houston_sites
+# geocode houston_sites
 codes <- geocode(houston_sites)
 
 codes$location <- str_replace(string = houston_sites, pattern = ", Houston", replace = "")
 
-#examine codes
+# examine codes
 codes
 
-#create map object
+# create map object
 houston <- get_map(location = "Houston, Texas", source = "google", maptype = 'terrain')
 
-#map our newly coded locations
+# map our newly coded locations
 ggmap(houston) + 
   geom_point(data = codes, aes(color = location), size = 5) +
   theme_map()
@@ -502,14 +532,14 @@ ggmap(houston) +
 There's one more way we can define the coordinates of our map. Instead of using a particular location, The `bbox` function allows you to define the boundary box around your coordinates. We'll use the `wind` dataset which has wind data from Hurricane Ike. 
 
 ```{r}
-#filter crime to include only points in Houston area
+# filter crime to include only points in Houston area
 crime_sub <- crime %>% filter(lon <= -94.5 & lon > -97 & lat > 26 & lat < 30)
 
-#create a bbox using the coordinates of the long and lat of the codes dataframe.
+# create a bbox using the coordinates of the long and lat of the codes dataframe.
 #f is the fraction to which the boundaries are to be extended.
 bbox <- make_bbox(data = crime_sub, lon = lon, lat = lat, f = 1)
 
-#create map object using bbox coordinates
+# create map object using bbox coordinates
 houston <- get_map(location = bbox, zoom = 11,  maptype = 'terrain')
 
 ggmap(houston) +
@@ -542,13 +572,13 @@ Let's make a simple animation using the `animation` package. The `saveGIF` funct
 ```{r}
 library(animation)
 
-#Use saveGIF function with for loop to create animated plot object
+# Use saveGIF function with for loop to create animated plot object
 saveGIF(expr = {
   
-  #sets environment options to use the graphics magick convert option
+  # sets environment options to use the graphics magick convert option
   ani.options(convert = "gm convert")
   
-  #use for loop to create a series of plots which will be pasted together
+  # use for loop to create a series of plots which will be pasted together
   for (i in 1:10) plot(runif(25), ylim = 0:1)
   
   },movie.name = "runif.gif", img.name = 'runif', interval = 0.2, convert = 'gm convert')
@@ -565,11 +595,11 @@ Your animation should appear with the caption below it.
 The `gganimate` package is a wrapper around the `animation` package which makes it easier to use than its predecessor, in my opinion. It takes advantage of the `frame` aesthetic, which acts like the for loop on the variable you want to animate. Let's take a look at some historical storm data using the `storms` dataset.
 
 ```{r}
-#load package
+# load package
 library(gganimate)
 library(lubridate)
 
-#examine the storms dataset
+# examine the storms dataset
 str(storms)
 
 # extract names of  storms from 2005 that reached ctaegory 5
@@ -577,29 +607,29 @@ names <- storms %>%
   filter(year == 2005 & category ==5) %>% 
   dplyr::select(name) %>% 
   distinct %>% 
-  pull #converts data frame to vector
+  pull # converts data frame to vector
 
 
-#filter storms dataset to include all data from storms that reached category 5 in 2005
+# filter storms dataset to include all data from storms that reached category 5 in 2005
 storms <- storms %>% filter(name %in% names & year == 2005)
 
-#create date variable using existing date related variables
+# create date variable using existing date related variables
 storms <- storms %>% mutate(date = str_c(storms$year, storms$month, storms$day, sep = "-"))
 
-#add hour
+# add hour
 storms <- storms %>% mutate(date = str_c(storms$date, storms$hour, sep = " "))
 
-#make date time
-#truncated = allows the time to be converted to date_time without having the minutes or seconds
+# make date time
+# truncated = allows the time to be converted to date_time without having the minutes or seconds
 storms$date <- ymd_h(storms$date, truncated = 3)
 
-#create bbox using long & lat of storms dataset
+# create bbox using long & lat of storms dataset
 storms_bbox <- make_bbox(data = storms, lon = long, lat = lat)
 
-#get map of the storm coordinates made from bbox
+# get map of the storm coordinates made from bbox
 storms_map <- get_map(storms_bbox,maptype = 'watercolor', source = "google")
 
-#create map object and plot data to map
+# create map object and plot data to map
 p <- ggmap(storms_map) +
   geom_label(data = storms, 
              
@@ -616,7 +646,7 @@ p <- ggmap(storms_map) +
   theme_void() +
   coord_map()
 p
-#Make animated plot, save to file in working directory
+# Make animated plot, save to file in working directory
 gganimate(p, interval = 0.2, filename = 'storms.gif', convert = "gm convert")
 
 ```
@@ -638,14 +668,14 @@ You can install it from cran or you can install the development version using: `
 ```{r}
 library(tweenr)
 
-#Create variables needed for tween_elements
+# Create variables needed for tween_elements
 storms <- storms %>% 
   mutate(date = as.numeric(date - min(date)+1),
          ease = "linear",
          status = as.factor(status))
 
 
-#create a tween_elements object from our storms dataset
+# create a tween_elements object from our storms dataset
 storms_tween <- tweenr::tween_elements(data = storms, time = "date", group = "name", ease = 'ease', nframes = 1000)
 
 p <- ggplot(storms_tween, aes(x = wind, y = pressure, color = .group, size = category, frame = .frame, group = .group), cumulative = T) +
@@ -666,7 +696,7 @@ The package was developed by Paul Murell to overcome some of the deficiencies ba
 **Graphical oututs are controlled with the `grid.___()` functions.**
 
 ```{r}
-#load grid package
+# load grid package
 library(grid)
 
 # Draw rectangle in null viewport
@@ -709,7 +739,7 @@ gtab
 # Extract the grobs from gtab: gtab
 g <- gtab$grobs
 
-#draw only the legend
+# draw only the legend
 legend_index <- which(vapply(g, inherits, what = "gtable", logical(1)))
 
 grid.draw(g[[legend_index]])
@@ -749,14 +779,17 @@ Points outside the loops are drawn as individual dots.
 We can compute the data for a bagplot and plot one using the `aplpack` package.
 
 ```{r}
-#load required package
+# load required package
 library(aplpack)
 
-#Create bagplot of iris dataset: sepal.length vs. sepal.width
-bagplot(x = iris$Petal.Width, y =  iris$Petal.Length)
+# sample the diamonds dataset
+diamonds_subset <- sample_n(tbl = diamonds, size = 500)
+
+# Create bagplot of diamonds dataset: diamonds$carat vs. diamonds$price
+bagplot(x = diamonds_subset$carat, y = diamonds_subset$price)
 
 # Get bagplot stats
-bag <- compute.bagplot(x = iris$Petal.Width, y =  iris$Petal.Length)
+bag <- compute.bagplot(x = diamonds_subset$carat, y = diamonds_subset$price)
 
 # Examine the variables computed in the bag object.
 names(bag)
@@ -776,7 +809,7 @@ hull.bag <- data.frame(x = bag$hull.bag[,1], y = bag$hull.bag[,2])
 pxy.outlier <- data.frame(x = bag$pxy.outlier[,1], y = bag$pxy.outlier[,2])
 
 # Finish the ggplot command
-ggplot(iris, aes(x = Petal.Width,  y = Petal.Length)) +
+ggplot(diamonds_subset, aes(x = carat,  y = price)) +
   geom_polygon(data = hull.loop, aes(x = x, y = y), fill = "green") +
   geom_polygon(data = hull.bag, aes(x = x, y = y), fill = "orange") +
   geom_point(data = pxy.outlier, aes(x = x, y = y), col = "purple", pch = 16, cex = 1.5)
@@ -848,14 +881,14 @@ stat_bag <- function(mapping = NULL, data = NULL, geom = "polygon",
 And finally, we can apply the data to our new function to make the plot
 
 ```{r}
-ggplot(iris, aes(x = Petal.Width,  y = Petal.Length))+
+ggplot(diamonds_subset, aes(x = carat,  y = price))+
   stat_bag(fill = "black")
 ```
 
 This custom function is flexible as well. Instead of calling the fill in the stat_bag layer, we can group the dataset and apply the stat_bag function to each group.
 
 ```{r}
-ggplot(iris, aes(x = Petal.Width,  y = Petal.Length, fill = Species))+
+ggplot(diamonds_subset, aes(x = carat,  y = price, fill = clarity ))+
   stat_bag()
 ```
 
