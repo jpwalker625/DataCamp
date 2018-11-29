@@ -484,7 +484,7 @@ Using the `ggmap`[^1] package, we can use the `get_map()` function to access var
 # load required package
 library(ggmap)
 
-houston <- get_map(location = "San Francisco, CA", source = "stamen", maptype = "toner")
+houston <- get_map(location = "Houston, Texas", source = "stamen", maptype = "toner")
 
 # plot location using ggmap
 ggmap(houston)
