@@ -1,0 +1,26 @@
+---
+title: "Modeling with Tidyverse"
+author: "Joseph Walker"
+date: "November 29, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Background: General Modeling Frameowkr Formula
+
+y = f(x) + E]
+
+y: outcome variable
+x: explanatory or predictory variables
+f(): function of the relationship between y and x. Also called *the signal*
+E: (epsilon) the unsystematic error component. Also called *the noise*
+
+Three basic steps to EDA
+Look at your sata
+creating visualizations
+computing summary statistics
+
+Modeling for explanation vs. modeling for prediction
