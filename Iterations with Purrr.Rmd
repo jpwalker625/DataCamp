@@ -5,6 +5,8 @@ date: "December 13, 2018"
 output: html_document
 ---
 
+# Introduction to Purrr
+
 ```{r}
 library(tidyverse)
 library(repurrrsive)
@@ -16,7 +18,6 @@ data("sw_species")
 glimpse(sw_species[[2]])
 
 ```
-
 
 As shown above, we can use double brackets to subset an item or element in a list. In the case of the `sw_species` list, the second element corresponds to another list composed of information for Yoda's species.
 
@@ -39,12 +40,13 @@ names(sw_species)
 
 This is painstakingly tedious and inefficent. One could use a for loop to do this, but there's an even better way.
 
-We'll use the `map` function to iterate over the sw_species list to extract the names subelement of each species and name that list accordingly. Still with me?
+We can use the `set_names` function in conjunction with `map` to set the names of each list using the `$name` subelement.
 
 ```{r}
 #name the list of sw_species using the names subelement
-names(sw_species) <- map(sw_species, ~.x$name)
-
+sw_species <- sw_species %>%
+  set_names(map(sw_species, "name"))
+  
 #examine the names of sw_species
 names(sw_species)
 
@@ -52,20 +54,80 @@ names(sw_species)
 sw_species$Ewok
 ```
 
-We're off to a good start. By default, the map function returns elements in the form of a list. But there are variants such as `map_dbl` and `map_df` which will return the elements based on the type of class.
+By default, the map function returns elements in the form of a list. However,  there are variants which will return the elements based on the type of class as specified in the name.
 
-As an example, let's use the `map_chr` function to grab the `$language` element from each species list and return it as a dataframe.
+Here are the various map *flavors* for rererence:
+
+map_* | output
+----- | ------
+map_chr() | character vector
+map_lgl() | logical vector [T or F]
+map_int() | integer vector
+map_dbl() | double vector (numeric)
+map_df()  | as data frame
+
+As an example, let's use the `map_chr` function to grab the `$language` element from each species list which will return a character vector of the languages. Then we will use this character vector to create a data frame linking the languages back to the names of each species.
 
 In order to do so we need to clarify a few things first:
 
 **To specify how the list is used in the function, use the argument .x to denote where the list element goes inside the function. When you want to use .x to show where the element goes in the function, you need to put a ~ in front of the function in the second argument of map().**
 
 ```{r}
-
 data.frame(culture = map_chr(sw_species, ~.x$language)) %>%
   rownames_to_column(var = "character") %>%
   head(10)
 ```
+
+# More Complex Operations
+
+## Piping
+
+In the examples above, we saw that it is possible to using piping with the map function. The pipe allows us to streamline our code and makes it more human readable. Here's another example: 
+
+```{r}
+#create a numeric list
+(numlist <- list(c(1:10), c(11:20), c(21:30)))
+
+#use pipes to perform multiple operations
+numlist %>%
+  map(~.x %>% 
+      sum %>% 
+      sqrt %>% 
+      sin)
+```
+
+Simple mathematical operations are just the tip of the iceberg to what is possible. In this example, we'll create some simulated data for housing around the bay area.
+
+```{r}
+#create a list of areas
+area <- list("San Francisco", "Oakland", "San Jose")
+
+#create a list of dataframes with simulated data for each tree species
+list_of_df <- map(area,
+                  ~data.frame(area = .x,
+                              price = rnorm(mean = 800000,
+                                            n = 100,
+                                            sd = 800000/2.5),
+                              sq_ft = rnorm(mean = 1200,
+                                             n = 100,
+                                             sd = 1200/4)
+                  )
+)
+
+#examine a portion of the simulated data
+map(.x = list_of_df, .f = ~.x %>% head)
+```
+
+Now that we have the data let's model each area using the map function. I'll show how to do it in two ways.
+
+```{r}
+#model the data using pipes and the map function
+#notice that model function AND the summary function fall within the .f argument of the map function
+list_of_df %>%
+  map(.f = ~.x %>% lm(price ~ sq_ft, data = .) %>% summary)
+```
+
+
 
 
 
