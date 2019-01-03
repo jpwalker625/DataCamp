@@ -118,7 +118,7 @@ list_of_df <- map(area,
 map(.x = list_of_df, .f = ~.x %>% head)
 ```
 
-Now that we have the data let's model each area using the map function. I'll show how to do it in two ways.
+Now that we have the data let's model each area using the map function.
 
 ```{r}
 #model the data using pipes and the map function
@@ -127,8 +127,45 @@ list_of_df %>%
   map(.f = ~.x %>% lm(price ~ sq_ft, data = .) %>% summary)
 ```
 
+## multiple lists/datasets
 
+`Purrr` makes it easy to perform function(s) over multiple lists or datasets. For two lists, we can use `map2` which requuires `.x` and `.y`  as your list arguments. `pmap` handles more than two lists.
 
+First let's create a few lists
+```{r}
+#create a list of names
+names_list <-map(sw_species, .f = ~.$name)
 
+#create a list of lifespans
+lifespan_list <- map(sw_species, .f = ~.$average_lifespan)
+
+#create a list of languages
+language_list <- map(sw_species, .f = ~.$language)
+```
+
+Now let's create a dataframe using two of the lists
+```{r}
+#create a dataframe with the names and lifespan lists
+map2_df(.x = names_list, .y = lifespan_list, .f = ~data.frame(names = .x, avg_lifespan = .y))
+```
+
+pmap works a little differently. First, we need to create a master list, a list of lists so-to-speak.
+
+```{r}
+#create a master list
+species_info_list <- list(names = names_list, avg_lifespan = lifespan_list, language = language_list)
+
+pmap_df(.l = species_info_list, .f = function(names, avg_lifespan, language) data.frame(names = names, avg_lifespan = avg_lifespan, language = language))
+```
+
+Here's another example where we don't need to use the function argument to define the list elements
+
+```{r}
+a <- list(1:100)
+b <- list(rnorm(10, 25, 2))
+c <- list(seq(from = 10, to = 1000, by = 3))
+
+pmap(.l = list(a,b,c), .f = sum)
+```
 
 
