@@ -5,6 +5,11 @@ date: "December 13, 2018"
 output: html_document
 ---
 
+```{r include = FALSE}
+knitr::opts_chunk$set(warning = F, message = F)
+```
+
+
 # Introduction to Purrr
 
 ```{r}
@@ -149,7 +154,7 @@ Now let's create a dataframe using two of the lists
 map2_df(.x = names_list, .y = lifespan_list, .f = ~data.frame(names = .x, avg_lifespan = .y))
 ```
 
-pmap works a little differently. First, we need to create a master list, a list of lists so-to-speak.
+`pmap` works a little differently. First, we need to create a master list, a list of lists so-to-speak.
 
 ```{r}
 #create a master list
@@ -168,4 +173,129 @@ c <- list(seq(from = 10, to = 1000, by = 3))
 pmap(.l = list(a,b,c), .f = sum)
 ```
 
+# Troubleshooting Lists
+
+### Safely
+`safely` runs through a list returning result and error components allowing one to pinpoint the issue(s). 
+
+```{r error=T}
+#create a list 'foo'
+foo <- list(3, -10, Inf, "a")
+
+#use map function on foo
+map(foo, log)
+```
+
+As you see, we get an error somewhere in the list. We know that we can't take the log of "a", but what if our list was much larger? It would be very difficult to troubleshoot. This is exactly what `safely` is designed for.
+
+```{r}
+#use safely with map function
+map(foo, .f = safely(log, otherwise = NA_real_))
+
+```
+
+It is useful to use the `transpose` function in conjunction with troubleshooting functions such as safely to convert a list of pairs into a pair of lists for easier comprehension.
+
+```{r}
+#use transpose after function to split out results and errors
+foo %>%
+  map(safely(log, otherwise = NA_real_)) %>% 
+  transpose()
+```
+
+### Possibly
+
+Once we have figured out where the errors exist, we can replace `safely` with `possibly` to implement the change (e.g. inserting an 'NA' where all errors occur) without returning the error message.
+
+```{r}
+#use possibly to output list without errors
+foo %>%
+  map_dbl(possibly(log, otherwise = NA_real_))
+```
+
+Let's take a look at one more example using the Star Wars Species data we're already familiar with. Within the species list, there is a height subelement indicating the height of each species in cm. Let's isolate this element and convert it to feet.
+
+```{r}
+#extract the height subelement
+sw_species %>%
+  map(~.$average_height) %>%
+  map_dbl(as.numeric) %>%
+  map_dbl(~.x * 0.0328084, otherwise = NA_real_)
+```
+
+### Walk
+
+The `walk` function makes list outputs more human readable. It calls the function (.f) for its 'side-effect' and returns the input (.x) removing all the unnecessary list bracketing.
+
+In the example below we'll use the `population` dataset from the `tidyr` package to plot year vs. population for a selection of countries. 
+
+```{r}
+#select a random sample of countries
+(countries <- unique(population$country) %>%
+  sample(size = 5))
+
+plots <- population %>%
+  filter(country == countries) %>% # filter only countries of interest
+  split(.$country) %>% # split the data by country
+  map2(.x = .,
+       .y = names(.),
+       .f = ~ggplot(.x, aes(x = year, y = population)) +
+         geom_line() +
+         labs(title = .y))
+
+walk(plots, print)
+```
+
+# Problem Solving
+
+Now that we have some experience working with various functions in R, let's put our new found skills to the test by solving some problems. The `gh_users` dataset is also from the `repurrrsive` package and provides some data on github users.
+
+First, let's take a look at the dataset.
+```{r}
+#summarize the dataset
+summary(gh_users)
+
+#determine whether the dataset is named
+names(gh_users)
+```
+
+The `gh_users` daatset is comprised of 6 lists each comprised of 30 elements. We also know that the lists do not contain names. Let's take a look at the elements from the first list to see what kind of information is included.
+
+```{r}
+#exmaine the structure of the first list
+str(gh_users[[1]])
+```
+
+Now, let's determine which of the users has the most public repositories.
+
+```{r}
+map_int(gh_users, ~.$public_repos) %>% #pull out the # of public repositories
+  set_names(map_chr(gh_users, ~.$name)) %>% #assign names to each list element
+  sort(decreasing = T) #sort the data
+  
+```
+
+And there you have it. Jennifer Bryan has the most repositories with a whopping 168.
+
+Now let's take a look at an intersting problem using the `sw_films` and `sw_people` data.
+
+```{r}
+# Turn data into correct dataframe format
+film_by_character <- tibble(filmtitle = map_chr(sw_films, ~.$title)) %>%
+    mutate(filmtitle, characters = map(sw_films, ~.$characters)) %>%
+    unnest()
+
+# Pull out elements from sw_people
+sw_characters <- map_df(sw_people, `[`, c("height", "mass", "name", "url"))
+
+# Join the two new objects
+character_data <- inner_join(film_by_character, sw_characters, by = c("characters" = "url")) %>%
+    # Make sure the columns are numbers
+    mutate(height = as.numeric(height), mass = as.numeric(mass))
+
+# Plot the heights, faceted by film title
+ggplot(character_data, aes(x = height)) +
+  geom_histogram(stat = "count") +
+  facet_wrap(~ filmtitle)
+```
 
