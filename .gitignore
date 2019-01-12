@@ -1,5 +1,5 @@
 #html files
-.html
+*.html
 
 # History files
 .Rhistory
