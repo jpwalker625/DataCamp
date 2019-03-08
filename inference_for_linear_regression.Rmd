@@ -145,23 +145,29 @@ In thinking about the scientific research question, if IQ is caused only by gene
 newt=slope−1/SE
 
 If the hypothesis that the slope equals one is true, then the new test statistic will have a t-distribution which we can use for calculating a p-value.
-
+```{r}
 # Test the new hypothesis
 lm(Foster ~ Biological, data = twins) %>% 
   tidy() %>% 
   filter(term == "Biological") %>%
   mutate(statistic_test1 = (estimate - 1)/std.error, 
       p_value_test1 = 2 * pt(statistic_test1, df = nrow(twins) - 2))
-      
+```
+
 ### Comparing randomization inference and t-inference
 When technical conditions (see next chapter) hold, the inference from the randomization test and the t-distribution test should give equivalent conclusions. They will not provide the exact same answer because they are based on different methods. But they should give p-values and confidence intervals that are reasonably close.      
+
+```{r}
 # Find the p-value
 perm_slope %>%
   mutate(abs_perm_slope = abs(stat)) %>%
   summarize(p_value = mean(abs_perm_slope > abs(obs_slope)))
+```
   
 CI using t-theory
 In previous courses, you have created confidence intervals with the formula of statistic plus/minus some number of standard errors. With bootstrapping, we typically use two standard errors. With t-based theory, we use the specific t-multiplier.
+
+```{r}
 
 # Set alpha
 alpha <- .05
@@ -202,3 +208,5 @@ ggplot(predMeans, aes(x = Biological, y = Foster)) +
 ggplot(twins, aes(x = Biological, y = Foster)) + 
   geom_point() +
   stat_smooth(method = "lm", se = TRUE) 
+```
+
