@@ -1,11 +1,16 @@
 ---
 title: "Statistical Inference"
 output: html_notebook
+editor_options: 
+  chunk_output_type: inline
 ---
 # Introduction
 
-Null hypothesis (H~o~): The claim that is not interesting
-Alternative Hypothesis (H~A~) : The claim cooresponding to the research hypothesis
+Statistical Inference is the process of making decisions about the parameters of  a population  based on information from a representative sample.
+
+Null hypothesis (H~o~): The claim that is not interesting. The null hypothesis is usually that x & y are the same; that there is no difference between them.
+
+Alternative Hypothesis (H~A~) : The claim corresponding to the research hypothesis. The alternative hypothesis usually claims that there is a difference between x & y.
 
 **The "goal" is to disprove the null hypothesis**
 

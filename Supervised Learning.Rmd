@@ -40,7 +40,7 @@ In R, you can specify a formula using the tilde `~`. The variable on the left si
 ```{r}
 library(tidyverse)
 library(broom)
-library(openintro) #
+library(openintro)
 
 #examine the training data
 glimpse(textbooks)
@@ -179,6 +179,11 @@ ggplot(bac, aes(x = pred, y = residuals)) +
   ggtitle("residuals vs. linear model prediction")
 ```
 
+In the future you can use the following functions to extract the residuals more efficiently.
+
+From the `stats` package: `residuals()`.
+
+From the `modelr` package `add_residuals()`.
 
 ### Gain Curve
   
@@ -191,7 +196,6 @@ library(WVPlots)
 
 GainCurvePlot(frame = bac, xvar = "pred", truthVar = "BAC", title = "Blood Alcohol Content Model")
 ```
-
 
 ### RMSE  
   
@@ -213,17 +217,19 @@ sd(bac$BAC)
 
 ### $R^2$
 
-The $R^2$ is a measure of the goodness of fit, or rather, how well does your model explain the data? The $R^2$ value ranges between 0 - 1. A value of 0 means that you'd be better off guessing what the estimated value would be. A value of 1 means the model fits well and that you've accounted for all the variation in the data.
+The $R^2$ is a measure of the goodness of fit, or rather, how well the model does at explaining the data. The $R^2$ value ranges between 0 - 1. A value of 0 means that you'd be better off guessing what the estimated value would be. A value of 1 means the model fits well and that you've accounted for all the variation in the data.
 
 $$R^2 = 1 - {RSS \over SS_{tot}} $$
 where 
 
 RSS is the residual sum of squares  (the variance from the model)
-  $$RSS = \sum(y - prediction)^2$$
+  $$RSS = \sum(y - \hat y)^2$$
 and  
   
 TSS is the total sum of squares (the variance from the data)
 $$SS_{tot} = \sum(y - \bar y)^2$$
+
+and y =  actual values, $\hat y$ = predicted values, $\bar y$ = mean actual values
 
 ```{r}
 #calculate rss
@@ -244,15 +250,11 @@ rho <- cor(y = bac$BAC, x = bac$pred)
 rho^2
 ```
 
-## Model Training
+# Model Training
 
-In general, a model performs much better on the training data than on data the model has not yet seen.
+In general, a model performs much better on the training data than on data the model has not yet seen. Therefore it is best practice to split the dataset into a **training and test** set. This is recommended when the data is plentiful.
 
-It is common to split the dataset into a **training/test** set. This is recommended when the data is plentiful.
-
-**Test/Train splitting tests the final model**
-
-The following examples uses fictitious tips data. We seek to model the monetary tip associated with a single group as a function of the bill total.
+The following examples uses fictitious tips data (from `openintro` package). We seek to model the monetary tip associated with a single group as a function of the bill total.
 ```{r}
 #examine the dataset
 glimpse(tips)
@@ -424,7 +426,7 @@ And finally, you can express the product of two variables using: I(*)
   
 ## Transformations
 
-Transformations can take place on the response variable before modeling. A common example of this is log transforming monetary values, which are often lognormally distributed (tend to be skewed with a long tail). The procedure for doing this is as follows:
+Transformations can take place on the response variable before modeling. A common example of this is log transforming monetary values, which are often log-normally distributed (tend to be skewed with a long tail). The procedure for doing this is as follows:
 
 1) Log the outcome and fit a model  
 2) Maker the predictions in log space  
@@ -531,7 +533,11 @@ ggplot(cars_long, aes(x = pred, y = Price, group = modeltype, color = modeltype)
 
 ## Transforming Input Variables
 
+Sometimes it is necessary to transform the input variable prior to modeling. An example of this would be non-linear data that takes on a "hockey-stick" pattern such as housing data where price is fairly flat for smaller houses but dramatically increases as houses get much larger. 
 
+Quadratic equations are often used in the sciences to transform input variables. 
+
+Can you think of other examples in which it might be necessary to transform the input variable?
 
 # Dealing with Non-Linear Responses
 
@@ -583,15 +589,130 @@ The Sensitivity tells you the true positive rate and the Specificity indicates t
 
 ```{r confusion.matrix}
 #convert predicted probabilities to classes
-biopsy$pred_class <- ifelse(biopsy$pred > 0.5, "malignant", "benign") 
+biopsy <- biopsy %>%
+  mutate(pred_class = factor(ifelse(biopsy$pred > 0.5, "malignant", "benign"))) 
 
-caret::confusionMatrix(biopsy$pred_class,  biopsy$class)
+caret::confusionMatrix(data = biopsy$pred_class,  biopsy$class)
 ```
 
 
 ### poisson and quasipoisson regression
 
-# epil dataset for poisson
+Regression to predict count or rate data is a non-linear problem because count/rate data is restricted to being non-negative and integral. Both poisson and quasipoisson are generalized linear models that we can apply to this type of data. Some examples of this would be:  
+ 
+counts: Number of tickets a concert venue sells in a given year. 
+   
+rates: number of website hits/day 
+
+With poisson data, we expect the inputs to be additive and linear in the log(count). The outcome is an integer but the prediction is not necessarily have to be integral.In a poisson distribution, the mean equals the variance. If the variance is much different from the mean, then a quasipoisson model is called for.
+
+In the following example, we'll use the `flights` and `weather` dataset from the `nycflights13` package to make predictions on the number of ontime flights on a daily basis.
+
+```{r}
+library(nycflights13)
+
+summary(flights)
+
+summary(weather)
+```
+
+First let's combine the datsets using the time_hour variable as the connector.
+
+```{r}
+flights_combined <- inner_join(x = flights, y = weather, c("time_hour", "origin", "day", "year", "month", "hour"))
+```
+
+We can use the `arrival_delay` variable to determine whether a flight arrived on time or late. First we need to remove all of the rows with missing data (NAs).
+
+```{r}
+flights_clean <- flights_combined %>%
+  drop_na()
+```
+
+Now let's select the variables of interest and summarise the data.
+
+```{r}
+flights_clean <- flights_clean %>%
+  dplyr::select(month, day, arr_delay, hour, temp, wind_dir, wind_speed, wind_gust, precip, pressure, visib) %>%
+  group_by(month, day) %>%
+  summarise(count = sum(arr_delay <= 0),
+            temp = mean(temp),
+            wind_dir = mean(wind_dir),
+            wind_speed = mean(wind_speed),
+            wind_gust = mean(wind_gust),
+            precip = mean(precip),
+            visib = mean(visib)) %>%
+  ungroup()
+```
+
+Let's split our data into a training and test set. This is a different method than we used before.
+
+```{r}
+set.seed(4352) # for reproducibility
+
+samp <- sample(x = nrow(flights_clean), size = floor(0.7*(nrow(flights_clean))), replace = F)
+
+flights_train <- flights_clean[samp, ]
+flights_test <- flights_clean[-samp, ]
+
+```
+
+Now let's determine if the mean and variance are equal
+
+```{r}
+(mean_flights <- mean(flights_train$count))
+(var_flights <- var(flights_train$count))
+```
+
+Based on these results, we should use a quasipoisson model.
+
+```{r}
+#outcome variable
+outcome <- "count"
+
+#independent variables
+input_vars <- c("temp", "wind_dir", "wind_speed", "precip", "visib")
+
+#the formula
+fmla <- paste(outcome, "~", paste(input_vars, collapse = "+"))
+
+#the model
+flights_model <- glm(formula = fmla, data = flights_train, family = quasipoisson)
+
+#model results
+model_results <- glance(flights_model)
+
+#calculate the model fit
+(flights_pseudoR2 <- 1- (model_results$deviance/model_results$null.deviance))
+```
+
+How does this model compare to a normal linear regression model? Let's find out!
+
+```{r}
+glance(lm(fmla, flights_train))$r.squared
+```
+
+It appears the quasipoisson model is indeed a bit better based on the fitness of each model. Great!
+
+Finally, let's utilize the model we built to make predictions on the test set.
+
+```{r}
+#add predictions to the test set
+flights_test$predictions <- predict(flights_model, newdata = flights_test, type = "response")
+
+#calculate the rmse
+flights_test %>%
+  mutate(resids = predictions - count) %>%
+  summarise(rmse = sqrt(mean(resids^2)))
+```
+And let's visualize the count of actual daily on time flights vs. the predicted amount.
+
+```{r}
+flights_test %>%
+  ggplot(aes(x =predictions, y = count)) +
+  geom_point() +
+  geom_abline(color = "steelblue")
+```
 
 ### GAM
 
