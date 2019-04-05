@@ -716,12 +716,17 @@ flights_test %>%
 
 ### GAM
 
-Generalized Additive Models.
+Generalized Additive Models can be used when the relationship between the response and independent variables is unknown. We can use the `gam` function from the `mgcv` package for modeling. The function takes three arguments: formula, the data, and the family. When specifying the family, use these general guidelines:
 
-`mgcv` package for the `gam` function.
+* for regular regression: use "gaussian"
+* for probabilities: use "binomial"
+* for counts: poisson/quasipoisson
 
-`s()` function to denote a non-linear relationship of a ocntinuous variable in your formula.
+Becasue GAMs are more complex models, they are more likely to overfit and are best used on larger datasets.
 
+You can use the `s()` function to denote a non-linear relationship of a continuous variable in your formula.
+
+In the following example let's take a look at the `goog` dataset which examines Google's stock from 2006 to 2014. 
 ```{r}
 #install.packages("mgcv")
 library(lubridate)
@@ -787,15 +792,21 @@ goog_long %>%
   scale_color_brewer(palette = "Dark2")
 ```
 
+As you can see, the GAM fits the data much better than the linear model resulting in better predictions.
+
 # Tree-based Methods
+
+Decision Trees are modeling algorithms that do not assume linearity or additive effects. They can learn limited types of interactions among input variables. Decision trees are good at explaining the data, e.g. rmse, however they make "coarse-grained" predictions compared to other modeling processes and run the risk of overfitting. To reduce this risk, tree-based methods generally rely on ensemble methods, that is models made up more than one tree to make better predictions.
+
+In the next few sections, we will learn about two such decision trees that utilize ensemble methods.
 
 ## Random Forests
 
-Multiple diverse decision trees averaged together.
+One of the most popular decision tree models out there is the random forest model. 
 
-Reduces overfit
-Increases model expresiveness
-Finer grain predictions
+It uses multiple diverse decision trees averaged together. By doing so, it reduces overfitting the model, increases the model expresiveness, and makes for finer grain predictions.
+
+A random forest model works by first drawing a bootstrapped sample from the training data. For each sample, the decision tree is built. At each node, the best variable to split on is picked from a random subset of all the available variables. This continues on until the tree is grown. Finally, each tree is evaluated and the results are averaged.
 
 `ranger` package for the function with the same name that will perform random forest modeling.
 
